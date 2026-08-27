@@ -1,0 +1,189 @@
+{
+  "meta": {
+    "config_version": "1.0.0",
+    "source": "Legal Metrology Act, 2009 + Legal Metrology (Packaged Commodities) Rules, 2011 (as amended)",
+    "last_reviewed": "2026-08-27",
+    "disclaimer": "Sub-rule numbers are indicative and based on the consolidated/amended text as commonly cited. Before final submission, have one team member cross-check each rule_ref against the latest official gazette notification, since several sub-rules were renumbered by amendments in 2017 and 2022.",
+    "notes": [
+      "Fields marked applicability != 'all' only apply to specific package/commodity categories.",
+      "font_size_table values are in millimetres and represent MINIMUM required numeral/letter height.",
+      "This file is the single source of truth for compliance logic — do not hardcode any rule thresholds in Python code."
+    ]
+  },
+
+  "principal_display_panel": {
+    "rule_ref": "Rule 8",
+    "description": "All mandatory declarations must appear together on the Principal Display Panel (PDP), except where a rule explicitly allows an exception.",
+    "area_calculation": {
+      "rectangular_package": "height_mm * width_mm of one full side",
+      "cylindrical_or_near_cylindrical_package": "0.40 * (height_mm * circumference_mm)",
+      "other_shaped_package": "0.40 * total_surface_area_mm2"
+    },
+    "excluded_from_area": ["top", "bottom", "flange_top_bottom_of_cans", "shoulder_and_neck_of_bottles_and_jars"],
+    "small_package_exception": {
+      "rule_ref": "Rule 8(1)",
+      "condition": "package_capacity_cm3 <= 10",
+      "allowance": "Declarations may be on a card or tape firmly affixed to the package instead of printed directly."
+    }
+  },
+
+  "declarations": [
+    {
+      "field": "manufacturer_or_packer_or_importer_name_address",
+      "display_name": "Name and Complete Address of Manufacturer/Packer/Importer",
+      "rule_ref": "Rule 6(1)(a)",
+      "mandatory": true,
+      "applicability": "all",
+      "value_type": "text_block",
+      "min_length_chars": 15,
+      "format_regex": null,
+      "required_keywords_any": ["Mfg", "Manufactured", "Packed", "Marketed", "Imported", "Mktd"],
+      "font_size_table": null,
+      "notes": "No strict regex — validate primarily via presence + minimum text length + proximity to address-like tokens (PIN code pattern, city name). Full NER/keyword scoring recommended over pure regex."
+    },
+    {
+      "field": "common_or_generic_name",
+      "display_name": "Common / Generic Name of Commodity",
+      "rule_ref": "Rule 6(1)(b)",
+      "mandatory": true,
+      "applicability": "all",
+      "value_type": "short_text",
+      "min_length_chars": 2,
+      "format_regex": null,
+      "font_size_table": null,
+      "notes": "Usually the largest/most prominent text on the front panel (brand + product type). Cross-check against a known product-category keyword list if available."
+    },
+    {
+      "field": "net_quantity",
+      "display_name": "Net Quantity (weight / volume / number / length / area)",
+      "rule_ref": "Rule 6(1)(c) read with Rule 8(2) Table-I / Table-II",
+      "mandatory": true,
+      "applicability": "all",
+      "value_type": "measurement",
+      "format_regex": "\\d+(\\.\\d+)?\\s?(g|gm|gram|grams|kg|kilogram|ml|millilitre|milliliter|l|litre|liter|mg|cm|m|number|N|pcs)\\b",
+      "disallowed_terms": ["approx", "approximately", "around", "about"],
+      "standard_units_only": true,
+      "font_size_table": {
+        "basis": "Table-I (declared in weight or volume)",
+        "unit": "mm",
+        "tiers": [
+          { "max_net_qty_grams_or_ml": 200,  "min_height_normal_mm": 1, "min_height_blown_molded_mm": 2 },
+          { "max_net_qty_grams_or_ml": 500,  "min_height_normal_mm": 2, "min_height_blown_molded_mm": 4 },
+          { "max_net_qty_grams_or_ml": null, "min_height_normal_mm": 4, "min_height_blown_molded_mm": 6 }
+        ]
+      },
+      "letter_width_rule": "Width of letter/numeral shall not be less than 1/3 of its height (except numeral '1' and letters i/I/l).",
+      "surrounding_space_rule": {
+        "rule_ref": "Rule 8",
+        "above_below_mm": "at least equal to numeral height",
+        "left_right_mm": "at least twice the numeral height",
+        "description": "Area immediately surrounding the net quantity declaration must be free of any other printed text/graphics."
+      },
+      "notes": "This is the highest-scrutiny field — implement font_measure.py against this exact tiered table, not a flat threshold."
+    },
+    {
+      "field": "mrp",
+      "display_name": "Maximum Retail Price (inclusive of all taxes)",
+      "rule_ref": "Rule 6(1)(e)",
+      "mandatory": true,
+      "applicability": "all",
+      "value_type": "currency",
+      "format_regex": "(₹|Rs\\.?|INR)\\s?\\d+(,\\d{2,3})*(\\.\\d{1,2})?",
+      "must_contain_phrase_any": ["incl. of all taxes", "inclusive of all taxes", "incl of all taxes"],
+      "font_size_table": {
+        "basis": "Same Table-I tiers as net_quantity, applied independently to the MRP numeral height",
+        "unit": "mm"
+      },
+      "notes": "Two separate checks: (1) currency+amount format regex match, (2) presence of the mandatory tax-inclusivity phrase. Both must pass."
+    },
+    {
+      "field": "unit_sale_price",
+      "display_name": "Unit Sale Price",
+      "rule_ref": "Rule 6(1)(e) proviso / Rule 18",
+      "mandatory": false,
+      "applicability": "multi_piece_or_wholesale_packages_only",
+      "value_type": "currency",
+      "format_regex": "(₹|Rs\\.?|INR)\\s?\\d+(\\.\\d{2})?\\s?/\\s?(kg|g|l|ml|piece|unit)",
+      "font_size_table": {
+        "basis": "relative_to_mrp_font",
+        "min_height_relative_to_mrp": 0.5,
+        "description": "Unit sale price numeral height must be at least 50% of the MRP numeral height on the same package."
+      },
+      "notes": "Only mark mandatory=true dynamically at runtime if the product is detected as a multi-piece/wholesale package."
+    },
+    {
+      "field": "mfg_or_pack_or_import_date",
+      "display_name": "Month and Year of Manufacture / Packing / Import",
+      "rule_ref": "Rule 6(1)(f)",
+      "mandatory": true,
+      "applicability": "excludes_food_articles_seeds_cosmetics",
+      "value_type": "date",
+      "format_regex": "(0[1-9]|1[0-2])[\\/\\-\\s](\\d{4})|\\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\\.?\\s?\\d{4}\\b",
+      "must_not_be_future_date": true,
+      "font_size_table": null,
+      "notes": "Applicability changed by amendment (omitted for food articles from 01.10.2022) — check rules_config against product category before flagging as missing."
+    },
+    {
+      "field": "best_before_or_use_by_date",
+      "display_name": "Best Before / Use By Date",
+      "rule_ref": "Rule 6(1)(g)",
+      "mandatory": true,
+      "applicability": "perishable_or_time_sensitive_commodities_only",
+      "value_type": "date",
+      "format_regex": "(0[1-9]|[12]\\d|3[01])[\\/\\-\\s](0[1-9]|1[0-2])[\\/\\-\\s](\\d{4})|\\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\\.?\\s?\\d{4}\\b",
+      "font_size_table": null,
+      "notes": "Only mandatory=true at runtime if commodity_category flags perishability (e.g. food, pharma, cosmetics with shelf life)."
+    },
+    {
+      "field": "consumer_care_details",
+      "display_name": "Consumer Care / Grievance Contact Details",
+      "rule_ref": "Rule 6(1)(d)",
+      "mandatory": true,
+      "applicability": "all",
+      "value_type": "contact_block",
+      "format_regex": "(\\+?\\d{2,4}[-\\s]?\\d{6,10})|([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,})",
+      "required_any_of": ["phone_number", "email_address"],
+      "font_size_table": null,
+      "notes": "Must contain at least a phone number OR an email; toll-free numbers are common — regex should match both landline and toll-free formats."
+    },
+    {
+      "field": "country_of_origin",
+      "display_name": "Country of Origin / Manufacture / Assembly",
+      "rule_ref": "Rule 6(1)(k) / Legal Metrology (PC) (Amendment) provisions for imported goods",
+      "mandatory": false,
+      "applicability": "imported_goods_only",
+      "value_type": "short_text",
+      "format_regex": "(Country of Origin|Made in|Manufactured in)\\s?[:\\-]?\\s?[A-Za-z\\s]+",
+      "font_size_table": null,
+      "notes": "Set mandatory=true dynamically only when the product is flagged/detected as an imported item."
+    },
+    {
+      "field": "dimensions_or_number_of_contents",
+      "display_name": "Number/Dimension of Contents (where applicable)",
+      "rule_ref": "Rule 6(1)(c) explanation",
+      "mandatory": false,
+      "applicability": "specific_categories_sold_by_number_length_or_area",
+      "value_type": "measurement",
+      "format_regex": "\\d+\\s?(cm|m|sq\\.?\\s?ft|sq\\.?\\s?m|pcs|pieces|nos)",
+      "font_size_table": {
+        "basis": "Table-II (declared in length, area or number)",
+        "unit": "mm",
+        "note": "Populate Table-II tiers here once sourced from the official gazette; structurally identical to Table-I."
+      },
+      "notes": "Lower priority field — implement after the eight fields above are working end-to-end."
+    }
+  ],
+
+  "prohibited_declarations": {
+    "rule_ref": "Rule 6 / Numeration Rules, 2011",
+    "disallowed_quantity_terms": ["Jumbo", "Extra", "Dozen", "1/4", "1/2", "approx", "approximately", "around", "about"],
+    "description": "If any of these vague/ambiguous terms appear near a net-quantity declaration, flag as a violation even if a valid numeral is also present."
+  },
+
+  "severity_levels": {
+    "CRITICAL": ["net_quantity", "mrp", "manufacturer_or_packer_or_importer_name_address"],
+    "MAJOR": ["consumer_care_details", "mfg_or_pack_or_import_date", "common_or_generic_name", "best_before_or_use_by_date"],
+    "MINOR": ["unit_sale_price", "country_of_origin", "dimensions_or_number_of_contents"],
+    "description": "Use this to rank violations in the report — CRITICAL fields missing should drive the overall_compliance_status to NON_COMPLIANT with highest-priority flagging; MINOR fields may only trigger a warning rather than outright rejection, at the team's discretion."
+  }
+}
