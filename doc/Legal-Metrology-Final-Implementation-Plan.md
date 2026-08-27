@@ -1,4 +1,4 @@
-# Legal Metrology Compliance Checker — Final Implementation Plan
+  # Legal Metrology Compliance Checker — Final Implementation Plan
 
 Single source of truth. Follow this exactly — no alternate paths left in.
 
