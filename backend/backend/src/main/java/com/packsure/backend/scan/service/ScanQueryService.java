@@ -65,6 +65,7 @@ public class ScanQueryService {
                         .status(scan.getStatus())
                         .overallStatus(scan.getOverallStatus())
                         .complianceScore(scan.getComplianceScore())
+                        .needsManualReview(scan.getNeedsManualReview())
                         .ocrRawText(scan.getOcrRawText())
                         .imageUrl(scan.getImageUrl())
                         .errorMessage(scan.getErrorMessage())

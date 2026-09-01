@@ -1,114 +1,155 @@
 package com.packsure.backend.scan.service;
 
-import com.packsure.backend.scan.dto.MlScanResponse;
-import com.packsure.backend.scan.dto.MlScanResponse.MlDeclaration;
-import com.packsure.backend.scan.dto.MlScanResponse.MlRuleResult;
+import com.packsure.backend.scan.dto.MlAnalyzeResponse;
+import com.packsure.backend.scan.dto.MlAnalyzeResponse.MlConfidenceFlags;
+import com.packsure.backend.scan.dto.MlAnalyzeResponse.MlDeclaration;
+import com.packsure.backend.scan.dto.MlAnalyzeResponse.MlFontAnalysis;
+import com.packsure.backend.scan.dto.MlAnalyzeResponse.MlViolation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
- * Dev/test stand-in for the ML service. Produces a deterministic, realistic
- * {@link MlScanResponse} based on the image URL so the scan pipeline can be
- * demoed end to end without a running model service.
+ * Dev/test stand-in for the ML service. Produces a deterministic
+ * {@link MlAnalyzeResponse} — same JSON contract as the real
+ * {@code POST /api/v1/analyze} — so the scan pipeline can be demoed end to end
+ * without a running model service.
  */
 @Slf4j
 @Service
 @Profile("dev | test")
 public class MockMlAnalysisClient implements MlAnalysisClient {
 
+    private static final String MANUFACTURER = "manufacturer_or_packer_or_importer_name_address";
+    private static final String COMMODITY = "common_or_generic_name";
+    private static final String NET_QTY = "net_quantity";
+    private static final String MRP = "mrp";
+    private static final String MFG_DATE = "mfg_or_pack_or_import_date";
+    private static final String CONSUMER_CARE = "consumer_care_details";
+    private static final String COUNTRY = "country_of_origin";
+
     @Override
-    public MlScanResponse analyzeImageViaMl(String imageUrl) {
-        int bucket = Math.floorMod((imageUrl == null ? "" : imageUrl).hashCode(), 3);
-        log.info("[dev] MockMlAnalysisClient producing bucket-{} result for {}", bucket, imageUrl);
+    public MlAnalyzeResponse analyze(byte[] imageBytes, String filename, String contentType, String scanId) {
+        int bucket = Math.floorMod(Arrays.hashCode(imageBytes) ^ String.valueOf(filename).hashCode(), 3);
+        log.info("[dev] MockMlAnalysisClient producing bucket-{} result for scan {}", bucket, scanId);
 
         return switch (bucket) {
-            case 0 -> compliant();
-            case 1 -> partial();
-            default -> nonCompliant();
+            case 0 -> compliant(scanId);
+            case 1 -> partial(scanId);
+            default -> nonCompliant(scanId);
         };
     }
 
-    private MlScanResponse compliant() {
-        MlScanResponse r = new MlScanResponse();
-        r.setOverallStatus("COMPLIANT");
-        r.setDeclarations(List.of(
-                decl("MANUFACTURER_NAME_ADDRESS", true, "ABC Foods Pvt Ltd, Pune, MH 411001", 0.95),
-                decl("COMMODITY_NAME", true, "Refined Sunflower Oil", 0.93),
-                decl("NET_QUANTITY", true, "1 L", 0.91),
-                decl("MRP", true, "MRP Rs 185.00 (incl. of all taxes)", 0.94),
-                decl("MFG_DATE", true, "07/2026", 0.88),
-                decl("CONSUMER_CARE_DETAILS", true, "care@abcfoods.example / 1800-000-000", 0.86),
-                decl("COUNTRY_OF_ORIGIN", true, "India", 0.9)));
-        r.setRuleResults(List.of(
-                rule("RULE_6_1_A_MANUFACTURER_NAME", "Name & address of manufacturer/packer", "PASS", "Declared"),
-                rule("RULE_6_1_B_COMMODITY_NAME", "Common/generic name of commodity", "PASS", "Declared"),
-                rule("RULE_6_7_NET_QUANTITY", "Net quantity in standard units", "PASS", "1 L, cap-height 4.3 mm (>= 4.0 mm)"),
-                rule("RULE_6_1_E_MRP", "Maximum Retail Price", "PASS", "Declared with 'incl. of all taxes'"),
-                rule("RULE_6_1_D_MFG_DATE", "Month & year of manufacture", "PASS", "07/2026"),
-                rule("RULE_6_1_F_CONSUMER_CARE", "Consumer care / complaint contact", "PASS", "Email and phone present")));
+    private MlAnalyzeResponse compliant(String scanId) {
+        Map<String, MlDeclaration> d = new LinkedHashMap<>();
+        d.put(MANUFACTURER, present("ABC Foods Pvt Ltd, MIDC Bhosari, Pune, MH 411026", 0.95));
+        d.put(COMMODITY, present("Refined Sunflower Oil", 0.93));
+        d.put(NET_QTY, present("Net Qty: 1 L", 0.91));
+        d.put(MRP, present("MRP Rs 185.00 (inclusive of all taxes)", 0.94));
+        d.put(MFG_DATE, present("Mfg: 07/2026", 0.88));
+        d.put(CONSUMER_CARE, present("care@abcfoods.example | 1800-000-000", 0.86));
+        d.put(COUNTRY, present("Country of Origin: India", 0.9));
+        return build(scanId, "COMPLIANT", d,
+                List.of(font(NET_QTY, 4.3, 4.0, true)),
+                List.of());
+    }
+
+    private MlAnalyzeResponse partial(String scanId) {
+        Map<String, MlDeclaration> d = new LinkedHashMap<>();
+        d.put(MANUFACTURER, present("GrainMill Industries, Indore, MP", 0.90));
+        d.put(COMMODITY, present("Whole Wheat Atta", 0.92));
+        d.put(NET_QTY, present("5 kg", 0.87));
+        d.put(MRP, present("MRP Rs 260.00", 0.62));
+        d.put(MFG_DATE, present("05/2026", 0.83));
+        d.put(CONSUMER_CARE, absent());
+        return build(scanId, "NON COMPLIANT", d,
+                List.of(font(NET_QTY, 3.7, 4.0, false)),
+                List.of(
+                        violation("Rule 6(1)(e)", MRP, "Missing mandatory phrase 'inclusive of all taxes'", "MINOR"),
+                        violation("Rule 7", NET_QTY, "Font height 3.7mm is below required 4.0mm", "MINOR")));
+    }
+
+    private MlAnalyzeResponse nonCompliant(String scanId) {
+        Map<String, MlDeclaration> d = new LinkedHashMap<>();
+        d.put(MANUFACTURER, present("TangyTom", 0.71));
+        d.put(COMMODITY, present("Tomato Ketchup", 0.90));
+        d.put(NET_QTY, present("950 g", 0.85));
+        d.put(MRP, absent());
+        d.put(MFG_DATE, absent());
+        d.put(CONSUMER_CARE, absent());
+        return build(scanId, "NON COMPLIANT", d,
+                List.of(),
+                List.of(
+                        violation("Rule 6(1)(a)", MANUFACTURER, "Complete address not declared (name only)", "CRITICAL"),
+                        violation("Rule 6(1)(e)", MRP, "Mandatory declaration 'Maximum Retail Price' is missing", "CRITICAL"),
+                        violation("Rule 6(1)(f)", MFG_DATE, "Mandatory declaration 'Month and Year of Manufacture' is missing", "MAJOR"),
+                        violation("Rule 6(1)(d)", CONSUMER_CARE, "Mandatory declaration 'Consumer Care Details' is missing", "MAJOR")));
+    }
+
+    // --- helpers ---
+
+    private MlAnalyzeResponse build(String scanId, String overall, Map<String, MlDeclaration> declarations,
+                                    List<MlFontAnalysis> fonts, List<MlViolation> violations) {
+        MlAnalyzeResponse r = new MlAnalyzeResponse();
+        r.setProductId(scanId);
+        r.setStatus("SUCCESS");
+        r.setProcessedAt(Instant.now().toString());
+        r.setDeclarations(declarations);
+        r.setFontAnalysis(fonts);
+        r.setViolations(violations);
+        r.setOverallComplianceStatus(overall);
+
+        List<String> lowConf = new ArrayList<>();
+        declarations.forEach((k, v) -> {
+            if (v.isPresent() && v.getConfidence() != null && v.getConfidence() < 0.85) lowConf.add(k);
+        });
+        MlConfidenceFlags flags = new MlConfidenceFlags();
+        flags.setLowConfidenceFields(lowConf);
+        flags.setNeedsManualReview(!lowConf.isEmpty() || !violations.isEmpty());
+        r.setConfidenceFlags(flags);
         return r;
     }
 
-    private MlScanResponse partial() {
-        MlScanResponse r = new MlScanResponse();
-        r.setOverallStatus("PARTIAL");
-        r.setDeclarations(List.of(
-                decl("MANUFACTURER_NAME_ADDRESS", true, "GrainMill Industries, Indore, MP", 0.9),
-                decl("COMMODITY_NAME", true, "Whole Wheat Atta", 0.92),
-                decl("NET_QUANTITY", true, "5 kg", 0.87),
-                decl("MRP", true, "MRP Rs 260.00", 0.8),
-                decl("MFG_DATE", true, "05/2026", 0.83),
-                decl("CONSUMER_CARE_DETAILS", false, null, 0.0)));
-        r.setRuleResults(List.of(
-                rule("RULE_6_1_A_MANUFACTURER_NAME", "Name & address of manufacturer/packer", "PASS", "Declared"),
-                rule("RULE_6_1_B_COMMODITY_NAME", "Common/generic name of commodity", "PASS", "Declared"),
-                rule("RULE_6_7_NET_QUANTITY", "Net quantity in standard units", "WARNING", "Cap-height 3.7 mm is below the required 4.0 mm"),
-                rule("RULE_6_1_E_MRP", "Maximum Retail Price", "WARNING", "'inclusive of all taxes' clause not detected"),
-                rule("RULE_6_1_D_MFG_DATE", "Month & year of manufacture", "PASS", "05/2026"),
-                rule("RULE_6_1_F_CONSUMER_CARE", "Consumer care / complaint contact", "FAIL", "Mandatory declaration missing")));
-        return r;
-    }
-
-    private MlScanResponse nonCompliant() {
-        MlScanResponse r = new MlScanResponse();
-        r.setOverallStatus("NON_COMPLIANT");
-        r.setDeclarations(List.of(
-                decl("MANUFACTURER_NAME_ADDRESS", true, "TangyTom", 0.72),
-                decl("COMMODITY_NAME", true, "Tomato Ketchup", 0.9),
-                decl("NET_QUANTITY", true, "950 g", 0.85),
-                decl("MRP", false, null, 0.0),
-                decl("MFG_DATE", false, null, 0.0),
-                decl("CONSUMER_CARE_DETAILS", false, null, 0.0)));
-        r.setRuleResults(List.of(
-                rule("RULE_6_1_A_MANUFACTURER_NAME", "Name & address of manufacturer/packer", "FAIL", "Address not declared (name only)"),
-                rule("RULE_6_1_B_COMMODITY_NAME", "Common/generic name of commodity", "PASS", "Declared"),
-                rule("RULE_6_7_NET_QUANTITY", "Net quantity in standard units", "PASS", "950 g"),
-                rule("RULE_6_1_E_MRP", "Maximum Retail Price", "FAIL", "MRP not found on label"),
-                rule("RULE_6_1_D_MFG_DATE", "Month & year of manufacture", "FAIL", "Manufacture date not found"),
-                rule("RULE_6_1_F_CONSUMER_CARE", "Consumer care / complaint contact", "FAIL", "Mandatory declaration missing")));
-        return r;
-    }
-
-    private MlDeclaration decl(String type, boolean present, String value, double confidence) {
+    private MlDeclaration present(String value, double confidence) {
         MlDeclaration d = new MlDeclaration();
-        d.setDeclarationType(type);
-        d.setPresent(present);
-        d.setExtractedValue(value);
-        d.setConfidenceScore(present ? confidence : 0.0);
-        d.setBoundingBox(present ? "[" + rand(40, 300) + "," + rand(40, 520) + "," + rand(90, 260) + "," + rand(22, 56) + "]" : null);
+        d.setPresent(true);
+        d.setValue(value);
+        d.setConfidence(confidence);
+        d.setBbox(List.of(rand(40, 300), rand(40, 520), rand(90, 260), rand(22, 56)));
+        d.setSourceImageIndex(0);
         return d;
     }
 
-    private MlRuleResult rule(String code, String description, String status, String remarks) {
-        MlRuleResult m = new MlRuleResult();
-        m.setRuleCode(code);
-        m.setRuleDescription(description);
-        m.setStatus(status);
-        m.setRemarks(remarks);
-        return m;
+    private MlDeclaration absent() {
+        MlDeclaration d = new MlDeclaration();
+        d.setPresent(false);
+        d.setConfidence(0.0);
+        return d;
+    }
+
+    private MlFontAnalysis font(String field, double measured, double required, boolean compliant) {
+        MlFontAnalysis f = new MlFontAnalysis();
+        f.setField(field);
+        f.setMeasuredHeightMm(measured);
+        f.setRequiredMinMm(required);
+        f.setCompliant(compliant);
+        return f;
+    }
+
+    private MlViolation violation(String ruleRef, String field, String issue, String severity) {
+        MlViolation v = new MlViolation();
+        v.setRuleRef(ruleRef);
+        v.setField(field);
+        v.setIssue(issue);
+        v.setSeverity(severity);
+        return v;
     }
 
     private int rand(int min, int max) {

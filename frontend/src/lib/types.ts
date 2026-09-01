@@ -66,6 +66,7 @@ export interface DetailedScan {
     status: ScanStatus;
     overallStatus: ComplianceStatus;
     complianceScore: number | null;
+    needsManualReview: boolean | null;
     ocrRawText: string | null;
     imageUrl: string | null;
     errorMessage: string | null;

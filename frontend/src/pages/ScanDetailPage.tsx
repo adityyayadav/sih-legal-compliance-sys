@@ -110,6 +110,11 @@ export function ScanDetailPage() {
               <div className="verdict-main">
                 <span className="verdict-status">
                   <ComplianceBadge status={s.overallStatus} />
+                  {s.needsManualReview && (
+                    <span className="badge warn" style={{ marginLeft: 8 }}>
+                      Manual review recommended
+                    </span>
+                  )}
                 </span>
                 <p className="verdict-text">
                   {s.overallStatus === "COMPLIANT"
