@@ -131,7 +131,7 @@ Legend: ✅ done · 🟡 partial / needs fixing · ❌ not started · ⏭️ ML 
 | Step | Item | State | Notes |
 |---|---|---|---|
 | 5.1 | CORS finalization | 🟡 | Origin `localhost:3000` ✅. **Missing:** `exposedHeaders("Content-Disposition")`, explicit methods `GET,POST,PUT,DELETE,OPTIONS`. |
-| 5.2 | `backend/postman-collection.json` committed | ❌ | Not present. |
+| 5.2 | `backend/postman-collection.json` committed | ✅ | `backend/backend/postman-collection.json` — Postman v2.1, 7 folders (Auth/Users/Products/Scans/Dashboard/Reports/Health), collection-level bearer auth, test scripts auto-capture `token`/`refreshToken`/`productId`/`scanId`. Import → run Login → run through the folders. |
 | 5.3 | ML contract alignment + 30s timeout | ❌ | Depends on ML teammate; DTO rewrite (2B-2) + WebClient timeout. |
 | 5.4 | `DataSeeder` (dev profile: admin + inspector + sample products + sample scans) | ❌ | Not present. Big win for demo — dashboard needs data. |
 

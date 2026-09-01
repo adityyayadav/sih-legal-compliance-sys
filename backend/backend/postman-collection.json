@@ -1,0 +1,278 @@
+{
+  "info": {
+    "name": "Packsure — Legal Metrology Compliance API",
+    "description": "Backend API for the SIH legal-metrology compliance checker.\n\nSetup:\n1. Run the backend: `mvn spring-boot:run -Dspring-boot.run.profiles=dev` (or against Supabase).\n2. Set the `baseUrl` collection variable if not on :8080.\n3. Run **Auth > Login** (or Register) first — it stores `token` + `refreshToken` automatically.\n4. Run **Products > Create product** — it stores `productId`.\n5. Run **Scans > Submit scan** (attach a JPEG/PNG under the `file` form field) — it stores `scanId`.\n\nSeeded dev logins: admin@packsure.test / Admin@12345  ·  inspector@packsure.test / Inspector@123",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "token", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "productId", "value": "" },
+    { "key": "scanId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"tester\",\n  \"email\": \"tester@example.com\",\n  \"password\": \"secret123\"\n}"
+            },
+            "description": "Public self-registration. Always creates an INSPECTOR (a `role` field in the body is ignored). Password must be >= 8 chars. 409 if the email is taken."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const b = pm.response.json();",
+                  "  pm.collectionVariables.set('token', b.token);",
+                  "  pm.collectionVariables.set('refreshToken', b.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@packsure.test\",\n  \"password\": \"Admin@12345\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.collectionVariables.set('token', b.token);",
+                  "pm.collectionVariables.set('refreshToken', b.refreshToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh token",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/auth/refresh", "host": ["{{baseUrl}}"], "path": ["api", "auth", "refresh"] },
+            "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const b = pm.response.json();",
+                  "  pm.collectionVariables.set('token', b.token);",
+                  "  pm.collectionVariables.set('refreshToken', b.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "auth", "logout"] },
+            "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get current user",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/users/me", "host": ["{{baseUrl}}"], "path": ["api", "users", "me"] },
+            "description": "Profile of the authenticated user: { id, username, email, role, createdAt }."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "Create product",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/products", "host": ["{{baseUrl}}"], "path": ["api", "products"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Refined Sunflower Oil 1L\",\n  \"category\": \"EDIBLE_OIL\",\n  \"brand\": \"SunGold\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('productId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List products",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/products", "host": ["{{baseUrl}}"], "path": ["api", "products"] }
+          }
+        },
+        {
+          "name": "Get product by id",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["api", "products", "{{productId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Scans",
+      "item": [
+        {
+          "name": "Submit scan",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/api/scans", "host": ["{{baseUrl}}"], "path": ["api", "scans"] },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": [], "description": "JPEG or PNG image of the product label" },
+                { "key": "productId", "value": "{{productId}}", "type": "text" }
+              ]
+            },
+            "description": "multipart/form-data. Uploads to Cloudinary, calls the ML service, persists the result. Returns 201 + { id, status, overallStatus, errorMessage }. Processing is synchronous for the PoC.\n\n400 for a non-JPEG/PNG file; 502 if the Cloudinary upload fails."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('scanId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Scan status (poll)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/scans/{{scanId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "scans", "{{scanId}}", "status"] },
+            "description": "Lightweight state for frontend polling: { id, status, overallStatus, errorMessage }. An INSPECTOR may only poll their own scans (403 otherwise)."
+          }
+        },
+        {
+          "name": "List scans (paginated)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/scans?page=0&size=20&sort=createdAt,desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "scans"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" },
+                { "key": "sort", "value": "createdAt,desc" }
+              ]
+            },
+            "description": "Spring Data Page of { id, productName, status, overallStatus, createdAt }. ADMIN sees all scans; an INSPECTOR sees only their own."
+          }
+        },
+        {
+          "name": "Scan detailed",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/scans/{{scanId}}/detailed", "host": ["{{baseUrl}}"], "path": ["api", "scans", "{{scanId}}", "detailed"] },
+            "description": "Full nested view for the results page: { scan, product, declarations[], complianceResults[] }. INSPECTOR: own scans only (403 otherwise)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Stats",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/dashboard/stats", "host": ["{{baseUrl}}"], "path": ["api", "dashboard", "stats"] },
+            "description": "{ totalScans, compliant, nonCompliant, partial, scansLast7Days, scansLast30Days, topViolations[] }. Project-wide for ADMIN; the caller's own numbers for an INSPECTOR."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "Download PDF report",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/scans/{{scanId}}/report/pdf", "host": ["{{baseUrl}}"], "path": ["api", "scans", "{{scanId}}", "report", "pdf"] },
+            "description": "application/pdf + Content-Disposition: attachment. INSPECTOR: own scans only. In Postman use 'Send and Download' to save the file."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Actuator health",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/actuator/health", "host": ["{{baseUrl}}"], "path": ["actuator", "health"] }
+          }
+        }
+      ]
+    }
+  ]
+}
