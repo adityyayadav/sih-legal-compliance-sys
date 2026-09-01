@@ -38,6 +38,9 @@ public class Scan {
     /** 0..1 aggregate score from the ML service, if provided. */
     private Double complianceScore;
 
+    /** ML {@code confidence_flags.needs_manual_review} — low OCR confidence or open violations. */
+    private Boolean needsManualReview;
+
     /** Raw OCR text from the ML service, kept for audit / debugging. */
     @Column(columnDefinition = "TEXT")
     private String ocrRawText;

@@ -9,6 +9,7 @@ import {
   RuleBadge,
   ScanStatusBadge,
 } from "../components/ui";
+import { Meter } from "../components/Charts";
 import { fmtConfidence, fmtDateTime, titleCase } from "../lib/format";
 import { toApiError } from "../lib/api";
 import { downloadScanPdf, useScanDetail } from "../lib/queries";
@@ -90,6 +91,48 @@ export function ScanDetailPage() {
       {s.status === "FAILED" && (
         <Alert kind="error">Processing failed: {s.errorMessage ?? "unknown error"}</Alert>
       )}
+
+      {s.status === "COMPLETED" &&
+        (() => {
+          const pass = d.complianceResults.filter((r) => r.status === "PASS").length;
+          const warn = d.complianceResults.filter((r) => r.status === "WARNING").length;
+          const fail = d.complianceResults.filter((r) => r.status === "FAIL").length;
+          const evaluated = pass + warn + fail;
+          const score = evaluated ? Math.round(((pass + warn * 0.5) / evaluated) * 100) : 0;
+          const cls =
+            s.overallStatus === "COMPLIANT"
+              ? "ok"
+              : s.overallStatus === "PARTIAL"
+                ? "warn"
+                : "fail";
+          return (
+            <div className={`verdict ${cls}`}>
+              <div className="verdict-main">
+                <span className="verdict-status">
+                  <ComplianceBadge status={s.overallStatus} />
+                  {s.needsManualReview && (
+                    <span className="badge warn" style={{ marginLeft: 8 }}>
+                      Manual review recommended
+                    </span>
+                  )}
+                </span>
+                <p className="verdict-text">
+                  {s.overallStatus === "COMPLIANT"
+                    ? "All mandatory declarations are present and correctly formatted."
+                    : s.overallStatus === "PARTIAL"
+                      ? "Some declarations need attention — see the warnings below."
+                      : "One or more mandatory declarations are missing or non-conforming."}
+                </p>
+                <div className="verdict-counts">
+                  <span className="badge ok">{pass} passed</span>
+                  <span className="badge warn">{warn} warnings</span>
+                  <span className="badge fail">{fail} failed</span>
+                </div>
+              </div>
+              <Meter value={score} label="rule score" />
+            </div>
+          );
+        })()}
 
       <div className="grid cols-2">
         <Panel title="Scan details">
