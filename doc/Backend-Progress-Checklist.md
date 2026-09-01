@@ -14,7 +14,7 @@ Legend: ✅ done · 🟡 partial / needs fixing · ❌ not started · ⏭️ ML 
 | # | Item | State | Notes |
 |---|---|---|---|
 | B1 | `JAVA_HOME` on this machine points to a missing JDK 11 | ✅ | Fixed via `setx JAVA_HOME "C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot"` (2026-09-01). Reopen terminals to pick it up. |
-| B2 | No `.env` file → app cannot boot against Supabase | 🟡 | `.env.example` committed. **`dev` profile (H2 in-memory) added** so the app boots with zero external services — use it for all endpoint work. Real `.env` with Supabase + Cloudinary creds still needed for the production path / Cloudinary + real ML testing. |
+| B2 | No `.env` file → app cannot boot against Supabase | ✅ | `.env.example` committed. **`dev` profile is now fully self-contained** — H2 in-memory DB, local-disk image store (`LocalImageStorageService`, served at `/uploads/**`), and a deterministic ML mock (`MockMlAnalysisClient`). The entire scan flow works offline. Real `.env` (Supabase + Cloudinary) is only needed for the production path. |
 | B3 | No env template committed | ✅ | `backend/backend/.env.example` + `backend/backend/README.md` added. (We keep `application.properties` committed with env-var indirection instead of the guide's committed-`.properties.example` approach — cleaner, same effect.) |
 | B4 | `mvn` must be run from `backend/backend/`, not `backend/` | 🟡 | The phase guide says `cd backend/` — our layout is one level deeper. |
 
@@ -78,14 +78,14 @@ Legend: ✅ done · 🟡 partial / needs fixing · ❌ not started · ⏭️ ML 
 
 | Step | Item | State | Notes |
 |---|---|---|---|
-| 1 | Cloudinary config + upload service | ✅ | `config/CloudinaryConfig` + `scan/service/CloudinaryService`. Hardened 2026-09-01: empty-file guard (400), `FileUploadException` → **502**, returns `secure_url` (https), uploads to `packsure/scans` folder, `@Slf4j`. Scan row is only created *after* a successful upload (Phase 4.2 rollback ✓). |
-| 2 | ML client | 🟡 | `scan/service/MlServiceClient` exists but: (a) uses `new RestTemplate()` with **no connect/read timeout** → a hung ML call blocks the request thread forever; (b) blueprint/Impl-Plan wants **WebClient**; (c) it POSTs JSON `{imageUrl}` — **the agreed contract (Impl-Plan §5) is `multipart/form-data` with `images[]` + `scan_id` + `category`**; (d) no `MlWebClientConfig`. |
+| 1 | Cloudinary config + upload service | ✅ | Now behind an `ImageStorageService` interface. `CloudinaryService` (`@Profile("!dev & !test")`) = production: empty-file guard (400), `FileUploadException` → **502**, `secure_url`, `packsure/scans` folder. `LocalImageStorageService` (`@Profile("dev\|test")`) writes to `./uploads` and returns a `/uploads/**` URL. Scan row created only after a successful upload (Phase 4.2 rollback ✓). |
+| 2 | ML client | 🟡 | Now behind an `MlAnalysisClient` interface. `MockMlAnalysisClient` (`@Profile("dev\|test")`) returns a deterministic realistic `MlScanResponse` (COMPLIANT / PARTIAL / NON_COMPLIANT by image-URL hash) — the scan flow is fully demoable offline. **The real `MlServiceClient` (`@Profile("!dev & !test")`) still needs the rewrite**: `new RestTemplate()` w/ no timeout, JSON `{imageUrl}` body, and DTOs that don't match the agreed contract (Impl-Plan §5: multipart `images[]` + `scan_id` + `category`). Blocked on the ML teammate for the final contract. |
 | 2 | ML response DTOs | 🟡 | `MlScanResponse` **does not match Impl-Plan §5.** Real shape: `scan_id`, `status`, `processed_at`, `declarations` is a **map keyed by type** (not a list), plus `font_analysis[]`, `violations[]`, `overall_compliance_status`, `confidence_flags`. Current DTO has `overallStatus` + `declarations[]` + `ruleResults[]`. Needs a rewrite: `MlAnalysisResponse`, `MlDeclarationDto`, `MlFontAnalysisDto`, `MlViolationDto`. **Coordinate the final contract with the ML teammate before rewriting** (their `/analyze` isn't built yet — `ml-service/app/main.py` is empty). |
 | 3 | `ScanService` orchestrator | ✅ | Rewritten 2026-09-01. No class-level `@Transactional` — each `save()` is its own short tx, so the DB connection is **not** held across the Cloudinary upload or the ML call. Flow: validate → upload → save `PENDING` → save `PROCESSING` → ML call → (map + `COMPLETED`) or (`FAILED` + truncated errorMessage). Enum mapping is now defensive: unknown/blank ML status → `null` overall / `NOT_APPLICABLE` rule, logged as a warning, scan still succeeds. `@Slf4j` timing logs. |
 | 3 | `getScanStatus(id)` | ✅ | `ScanService.getScanStatus(UUID)` → `ScanStatusResponse {id, status, overallStatus, errorMessage}`. 404 if the scan doesn't exist. |
 | 4 | `POST /api/scans` | ✅ | Renamed from `POST /api/scans/analyze`; part is now **`file`** (+ `productId`). Returns **201** with `ScanStatusResponse`. Uses `@AuthenticationPrincipal`. Verified: bad UUID → 400, unknown product → 404, no token → 401, dummy Cloudinary → 502. |
 | 4 | `GET /api/scans/{id}/status` | ✅ | Built. Returns `ScanStatusResponse`. Verified 404 / 401 paths. |
-| 5 | Pipeline test (ML down → FAILED; ML up → COMPLETED) | 🟡 | Error/validation paths verified on the `dev` profile. **Full happy path (upload → PROCESSING → ML-fail → FAILED) needs real Cloudinary creds** — dummy dev creds fail the upload before the ML step. Re-test once `.env` has real Cloudinary, or with the step-8 mock. |
+| 5 | Pipeline test (ML down → FAILED; ML up → COMPLETED) | ✅ | Full happy path now runs offline via the dev/test mocks. Automated: `ScanApiTest.submit_valid_image_runs_the_full_pipeline_via_mocks` (201 → `COMPLETED`, image at `/uploads/`, declarations + rule results populated). Also verified manually on the `dev` profile end-to-end incl. PDF download. |
 
 ---
 
@@ -112,10 +112,10 @@ Legend: ✅ done · 🟡 partial / needs fixing · ❌ not started · ⏭️ ML 
 |---|---|
 | `AuthAndUserApiTest` (7) | register→login→`/me`, `role` in body ignored, dup email 409, short pw 400+fieldErrors, wrong pw 401, `/me` 401, unknown route 404 |
 | `ProductApiTest` (4) | create/list/get, `createdAt` present, unknown 404, no-token 401, missing name 400 |
-| `ScanApiTest` (4) | non-image 400, missing file 400, no-token 401, unknown scan status 404 |
+| `ScanApiTest` (5) | non-image 400, missing file 400, no-token 401, unknown scan status 404, **full pipeline via mocks → COMPLETED** |
 | `ScanAccessControlTest` (3) | inspector sees own / admin sees all, cross-user `/detailed` 403, `?status=` filter, dashboard stats scoped per inspector |
 
-`mvn test` → **19 passing** (+ the original `contextLoads`). Runs fully offline.
+`mvn test` → **20 passing** (incl. the original `contextLoads`). Runs fully offline.
 
 ---
 

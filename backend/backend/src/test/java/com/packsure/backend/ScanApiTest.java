@@ -1,7 +1,11 @@
 package com.packsure.backend;
 
+import com.packsure.backend.product.Product;
+import com.packsure.backend.product.ProductRepository;
 import com.packsure.backend.support.AbstractIntegrationTest;
+import com.packsure.backend.user.User;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockMultipartFile;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -9,6 +13,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class ScanApiTest extends AbstractIntegrationTest {
+
+    @Autowired
+    ProductRepository products;
 
     @Test
     void submit_rejects_non_image_with_400() throws Exception {
@@ -44,5 +51,28 @@ class ScanApiTest extends AbstractIntegrationTest {
         mvc.perform(get("/api/scans/22222222-2222-2222-2222-222222222222/status")
                         .header("Authorization", bearer(token)))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void submit_valid_image_runs_the_full_pipeline_via_mocks() throws Exception {
+        String token = registerInspector("vic", "vic@test.com", "secret123");
+        User u = users.findByEmail("vic@test.com").orElseThrow();
+        Product p = products.save(Product.builder().name("Atta 5kg").category("FLOUR").createdBy(u).build());
+        var image = new MockMultipartFile("file", "label.png", "image/png", new byte[]{(byte) 0x89, 'P', 'N', 'G', 1, 2, 3});
+
+        var res = mvc.perform(multipart("/api/scans").file(image)
+                        .param("productId", p.getId().toString())
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("COMPLETED"))
+                .andExpect(jsonPath("$.overallStatus").isNotEmpty())
+                .andReturn();
+        String scanId = readJson(res.getResponse().getContentAsString()).get("id").asText();
+
+        mvc.perform(get("/api/scans/" + scanId + "/detailed").header("Authorization", bearer(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.declarations").isNotEmpty())
+                .andExpect(jsonPath("$.complianceResults").isNotEmpty())
+                .andExpect(jsonPath("$.scan.imageUrl").value(org.hamcrest.Matchers.containsString("/uploads/")));
     }
 }

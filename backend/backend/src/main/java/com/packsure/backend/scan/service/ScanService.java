@@ -44,8 +44,8 @@ public class ScanService {
     private final ScanRepository scanRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
-    private final CloudinaryService cloudinaryService;
-    private final MlServiceClient mlServiceClient;
+    private final ImageStorageService imageStorage;
+    private final MlAnalysisClient mlClient;
 
     public Scan processNewScan(MultipartFile imageFile, String productIdStr, String userEmail) {
         validateImage(imageFile);
@@ -56,7 +56,7 @@ public class ScanService {
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
         // Slow work, outside any transaction.
-        String imageUrl = cloudinaryService.uploadImage(imageFile);
+        String imageUrl = imageStorage.uploadImage(imageFile);
 
         Scan scan = scanRepository.save(Scan.builder()
                 .imageUrl(imageUrl)
@@ -71,7 +71,7 @@ public class ScanService {
 
         long start = System.currentTimeMillis();
         try {
-            MlScanResponse mlResponse = mlServiceClient.analyzeImageViaMl(imageUrl);
+            MlScanResponse mlResponse = mlClient.analyzeImageViaMl(imageUrl);
             applyMlResponse(mlResponse, scan);
             scan.setStatus(ScanStatus.COMPLETED);
             scan.setProcessedAt(LocalDateTime.now());
