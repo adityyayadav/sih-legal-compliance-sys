@@ -4,6 +4,7 @@ import com.packsure.backend.product.Product;
 import com.packsure.backend.product.ProductRepository;
 import com.packsure.backend.product.dto.ProductRequest;
 import com.packsure.backend.product.dto.ProductResponse;
+import com.packsure.backend.exception.ResourceNotFoundException;
 import com.packsure.backend.user.User;
 import com.packsure.backend.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,7 @@ public class ProductService {
     @Transactional
     public ProductResponse createProduct(ProductRequest request, String userEmail) {
         User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         Product product = Product.builder()
                 .name(request.getName())
@@ -47,7 +48,7 @@ public class ProductService {
     @Transactional(readOnly = true)
     public ProductResponse getProductById(UUID id) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Product not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
         return mapToResponse(product);
     }
 

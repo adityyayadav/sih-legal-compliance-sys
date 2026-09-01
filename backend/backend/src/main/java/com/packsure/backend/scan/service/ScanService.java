@@ -10,6 +10,7 @@ import com.packsure.backend.scan.Declaration;
 import com.packsure.backend.scan.Scan;
 import com.packsure.backend.scan.ScanRepository;
 import com.packsure.backend.scan.dto.MlScanResponse;
+import com.packsure.backend.exception.ResourceNotFoundException;
 import com.packsure.backend.user.User;
 import com.packsure.backend.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -34,9 +35,9 @@ public class ScanService {
         
         // 1. Fetch relations
         User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         Product product = productRepository.findById(java.util.UUID.fromString(productIdStr))
-                .orElseThrow(() -> new IllegalArgumentException("Product not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
         // 2. Upload Image to Cloudinary
         String imageUrl = cloudinaryService.uploadImage(imageFile);

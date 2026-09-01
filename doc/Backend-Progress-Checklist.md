@@ -36,11 +36,11 @@ Legend: ✅ done · 🟡 partial / needs fixing · ❌ not started · ⏭️ ML 
 
 | 0.7 | `mvn clean package` / `mvn test` works offline | ✅ | `BackendApplicationTests` now uses `@ActiveProfiles("test")` + `src/test/resources/application-test.properties` (H2). Previously it needed a live DB and failed the build. |
 
-### Bugs confirmed by the 2026-09-01 smoke test (dev profile)
-- Duplicate registration → **HTTP 500** (want 409) — `GlobalExceptionHandler` gap.
-- Wrong password on login → **HTTP 500** (want 401).
-- `GET /api/users/me` → **HTTP 500** (route doesn't exist; want 404 now, real endpoint later).
-- `POST /api/products` response has `createdAt: null` (entity mapped to DTO before the tx flush sets `@CreationTimestamp`; correct on `GET`). Minor.
+### Bugs from the 2026-09-01 smoke test
+- ~~Duplicate registration → HTTP 500 (want 409)~~ — **fixed in step 2** (now 409).
+- ~~Wrong password on login → HTTP 500 (want 401)~~ — **fixed in step 2** (now 401).
+- ~~`GET /api/users/me` → HTTP 500~~ — **fixed in step 2** (now 404; real endpoint still to build in step 3).
+- `POST /api/products` response has `createdAt: null` (entity mapped to DTO before the tx flush sets `@CreationTimestamp`; correct on `GET`). Minor — still open.
 - Startup warnings: `DaoAuthenticationProvider` + `UserDetailsService` bean redundancy warning; `spring.jpa.open-in-view` not set explicitly. Cosmetic.
 
 ---
@@ -55,7 +55,7 @@ Legend: ✅ done · 🟡 partial / needs fixing · ❌ not started · ⏭️ ML 
 | 1.2 | `rules` table / `Rule` entity (Impl-Plan §4) | ❌ | Optional. Rules currently live only in the ML service's `rules_db.py`. Only needed if we want a `GET /api/rules` passthrough or DB-backed rules later. Low priority for demo. |
 | 1.3 | Schema auto-created in Supabase, verified | ❌ | Blocked by B2. |
 | 1.4 | 5 repositories | ✅ | All present + `RefreshTokenRepository`. No custom query methods yet (needed in Phase 2C). |
-| 1.5 | `GlobalExceptionHandler` | 🟡 | **Only catches generic `Exception` → everything is HTTP 500** and leaks `ex.getMessage()`. Missing: `404` (`EntityNotFoundException`), `400` (`MethodArgumentNotValidException` with field errors), `403` (`AccessDeniedException`), `401` (`AuthenticationException` / `BadCredentialsException`), `409` (duplicate email). No consistent `{status,error,message}` shape. **This is why "email already in use" / "product not found" currently return 500.** |
+| 1.5 | `GlobalExceptionHandler` | ✅ | Rewritten 2026-09-01. `ErrorResponse` body `{timestamp,status,error,message,fieldErrors?}`. Handlers: 404 (`ResourceNotFoundException` + unknown route), 409 (`DuplicateResourceException`), 400 (`MethodArgumentNotValidException` w/ field errors, `ConstraintViolationException`, type mismatch, `IllegalArgumentException`), 401 (`AuthenticationException`), 403 (`AccessDeniedException`), 413 (upload too large), 500 (generic — logged, safe message). Services throw the new typed exceptions. Verified with an 8-case smoke test. |
 
 ---
 

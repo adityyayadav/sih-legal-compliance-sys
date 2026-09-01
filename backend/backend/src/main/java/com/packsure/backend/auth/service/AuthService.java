@@ -5,6 +5,7 @@ import com.packsure.backend.auth.dto.RefreshTokenRequest;
 import com.packsure.backend.auth.dto.RegisterRequest;
 import com.packsure.backend.auth.dto.AuthResponse;
 import com.packsure.backend.auth.entity.RefreshToken;
+import com.packsure.backend.exception.DuplicateResourceException;
 import com.packsure.backend.user.User;
 import com.packsure.backend.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +31,7 @@ public class AuthService {
     @Transactional
     public AuthResponse register(RegisterRequest registerRequest) {
         if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("Email already in use");
+            throw new DuplicateResourceException("Email already in use");
         }
 
         User user = User.builder()
