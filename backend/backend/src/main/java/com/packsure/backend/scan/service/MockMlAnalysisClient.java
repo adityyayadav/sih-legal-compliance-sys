@@ -11,10 +11,10 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Dev/test stand-in for the ML service. Produces a deterministic
@@ -35,10 +35,14 @@ public class MockMlAnalysisClient implements MlAnalysisClient {
     private static final String CONSUMER_CARE = "consumer_care_details";
     private static final String COUNTRY = "country_of_origin";
 
+    /** Rotates outcomes across consecutive scans so the demo shows all three verdicts. */
+    private final AtomicInteger counter = new AtomicInteger();
+
     @Override
     public MlAnalyzeResponse analyze(byte[] imageBytes, String filename, String contentType, String scanId) {
-        int bucket = Math.floorMod(Arrays.hashCode(imageBytes) ^ String.valueOf(filename).hashCode(), 3);
-        log.info("[dev] MockMlAnalysisClient producing bucket-{} result for scan {}", bucket, scanId);
+        int bucket = Math.floorMod(counter.getAndIncrement(), 3);
+        log.info("[dev] MockMlAnalysisClient producing bucket-{} ({}) result for scan {}",
+                bucket, new String[]{"COMPLIANT", "PARTIAL", "NON_COMPLIANT"}[bucket], scanId);
 
         return switch (bucket) {
             case 0 -> compliant(scanId);
