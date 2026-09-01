@@ -89,15 +89,18 @@ Legend: ✅ done · 🟡 partial / needs fixing · ❌ not started · ⏭️ ML 
 
 ---
 
-## Phase 2C — Dashboard & Reports (Dev 3) — **entirely not started**
+## Phase 2C — Dashboard & Reports — **done 2026-09-01**
 
 | Step | Item | State | Notes |
 |---|---|---|---|
-| 1 | `GET /api/scans/{id}/detailed` (nested scan+product+declarations+results) | ❌ | No `report/` package. Need `DetailedScanResponse`, `DeclarationResponse`, `ComplianceResultResponse` DTOs. |
-| 2 | `DashboardService` + `GET /api/dashboard/stats` | ❌ | No `dashboard/` package. Needs custom `@Query` methods on `ScanRepository` / `ComplianceResultRepository` (total, count-by-status, last 7/30 days, top-5 violations by `ruleCode`). |
-| 2 | `GET /api/scans` (paginated list) | ❌ | Needs `Pageable` + a summary DTO (id, product name, status, date). |
-| 3 | `PdfGeneratorService` + `GET /api/scans/{id}/report/pdf` | ❌ | OpenPDF dependency already present. Returns `application/pdf` + `Content-Disposition: attachment`. |
-| 4 | Test with seeded rows | ❌ | Pending. |
+| 1 | `GET /api/scans/{id}/detailed` | ✅ | `scan/controller/ScanQueryController` + `ScanQueryService`. `DetailedScanResponse` = `{scan, product, declarations[], complianceResults[]}` (DTOs in `report/dto/`). 404 if absent. Reads inside a read-only tx; `product` via `@EntityGraph`, the two `List` collections lazy-init (can't join-fetch two bags). |
+| 2 | `GET /api/dashboard/stats` | ✅ | `dashboard/` package. `{totalScans, compliant, nonCompliant, partial, scansLast7Days, scansLast30Days, topViolations[]}`. New repo methods: `ScanRepository.countByOverallStatus` / `countByCreatedAtAfter`; `ComplianceResultRepository.findTopViolations(FAIL, PageRequest.of(0,5))` projection. |
+| 2 | `GET /api/scans` (paginated) | ✅ | `ScanQueryController#list`, `@PageableDefault(size=20, sort="createdAt")`. Returns `Page<ScanSummaryResponse>` `{id, productName, status, overallStatus, createdAt}`. Supports `?page&size&sort=createdAt,desc`. **Not yet role-scoped** (INSPECTOR-sees-own is step 7). |
+| 3 | `GET /api/scans/{id}/report/pdf` | ✅ | `report/service/PdfReportService` (OpenPDF). A4: title, scan/product meta table, Declarations table, Compliance Results table, overall-status footer. Returns `application/pdf` + `Content-Disposition: attachment`. Verified: valid `%PDF`, ~2.2 KB for a seeded scan. |
+| 4 | Test with seeded rows | ✅ | `config/DataSeeder` (`@Profile("dev")`, only when DB empty) — 2 users, 6 products, 9 scans (8 completed w/ declarations + compliance results across COMPLIANT/NON_COMPLIANT/PARTIAL, 1 FAILED). Seeded creds: `admin@packsure.test / Admin@12345`, `inspector@packsure.test / Inspector@123`. All four endpoints verified against it. |
+
+### Also done here (pulled forward from Phase 5.1)
+- **CORS finalized**: explicit origins `localhost:3000` + `localhost:5173` (Vite), methods `GET/POST/PUT/PATCH/DELETE/OPTIONS`, headers `Authorization, Content-Type`, **exposed `Content-Disposition`** (PDF download).
 
 ---
 

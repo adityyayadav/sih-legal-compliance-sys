@@ -19,11 +19,18 @@ Spring Boot 4.1.1 · Java 21 · Maven · PostgreSQL (Supabase) · Cloudinary
 
 In-memory H2 database, dummy external creds. Data is wiped on restart.
 Cloudinary uploads and real ML calls fail at call time — fine for auth /
-product / endpoint work.
+product / dashboard / report work.
 
 ```bash
 mvn spring-boot:run "-Dspring-boot.run.profiles=dev"
 ```
+
+On an empty DB the `dev` profile seeds demo data (users, products, scans):
+
+| Login | Password | Role |
+|---|---|---|
+| `admin@packsure.test` | `Admin@12345` | ADMIN |
+| `inspector@packsure.test` | `Inspector@123` | INSPECTOR |
 
 ### B) Real services (Supabase + Cloudinary)
 
