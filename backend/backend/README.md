@@ -17,9 +17,10 @@ Spring Boot 4.1.1 · Java 21 · Maven · PostgreSQL (Supabase) · Cloudinary
 
 ### A) `dev` profile — no Supabase/Cloudinary needed (fastest)
 
-In-memory H2 database, dummy external creds. Data is wiped on restart.
-Cloudinary uploads and real ML calls fail at call time — fine for auth /
-product / dashboard / report work.
+In-memory H2 database. Data is wiped on restart. **Fully self-contained** —
+image uploads are stored on local disk (`./uploads`, served at `/uploads/**`)
+and the ML analysis is a deterministic mock, so the whole scan flow works
+with no external services.
 
 ```bash
 mvn spring-boot:run "-Dspring-boot.run.profiles=dev"
