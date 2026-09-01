@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 620" role="img" aria-label="Automated label inspection">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0a2e73"/>
+      <stop offset="0.55" stop-color="#123a86"/>
+      <stop offset="1" stop-color="#1a56a8"/>
+    </linearGradient>
+    <linearGradient id="scrim1" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#06214f" stop-opacity="0.92"/>
+      <stop offset="0.55" stop-color="#06214f" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#06214f" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="carton" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f6f2e8"/>
+      <stop offset="1" stop-color="#e6ddc7"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="620" fill="url(#g1)"/>
+  <g opacity="0.10" fill="#ffffff">
+    <circle cx="1290" cy="150" r="240"/>
+    <circle cx="1500" cy="470" r="170"/>
+  </g>
+
+  <!-- product carton -->
+  <g transform="translate(980 120)">
+    <rect x="0" y="60" width="360" height="420" rx="10" fill="url(#carton)" stroke="#c9bd9c" stroke-width="3"/>
+    <path d="M0 60 L60 0 L420 0 L360 60 Z" fill="#efe8d5" stroke="#c9bd9c" stroke-width="3"/>
+    <path d="M360 60 L420 0 L420 420 L360 480 Z" fill="#d8cdaf" stroke="#c9bd9c" stroke-width="3"/>
+    <!-- label declarations -->
+    <rect x="34" y="104" width="292" height="30" rx="4" fill="#12306e" opacity="0.85"/>
+    <rect x="34" y="150" width="210" height="16" rx="3" fill="#7d8ba6"/>
+    <rect x="34" y="176" width="250" height="16" rx="3" fill="#7d8ba6"/>
+    <rect x="34" y="220" width="150" height="26" rx="4" fill="#138808" opacity="0.85"/>
+    <rect x="200" y="220" width="126" height="26" rx="4" fill="#ff9933" opacity="0.9"/>
+    <rect x="34" y="266" width="180" height="16" rx="3" fill="#9aa6bd"/>
+    <rect x="34" y="292" width="120" height="16" rx="3" fill="#9aa6bd"/>
+    <!-- barcode -->
+    <g transform="translate(34 340)" fill="#1c1c1c">
+      <rect x="0" y="0" width="6" height="70"/><rect x="12" y="0" width="4" height="70"/>
+      <rect x="22" y="0" width="8" height="70"/><rect x="36" y="0" width="4" height="70"/>
+      <rect x="46" y="0" width="6" height="70"/><rect x="58" y="0" width="10" height="70"/>
+      <rect x="74" y="0" width="4" height="70"/><rect x="84" y="0" width="6" height="70"/>
+      <rect x="96" y="0" width="8" height="70"/><rect x="110" y="0" width="4" height="70"/>
+      <rect x="120" y="0" width="6" height="70"/><rect x="132" y="0" width="10" height="70"/>
+    </g>
+  </g>
+
+  <!-- scanning frame + reticle -->
+  <g transform="translate(940 90)" fill="none" stroke="#7ee0ff" stroke-width="5">
+    <path d="M0 40 L0 0 L40 0"/><path d="M420 0 L460 0 L460 40"/>
+    <path d="M460 480 L460 520 L420 520"/><path d="M40 520 L0 520 L0 480"/>
+    <line x1="0" y1="270" x2="460" y2="270" stroke="#7ee0ff" stroke-width="3" opacity="0.7"/>
+  </g>
+
+  <!-- verification badges -->
+  <g transform="translate(860 210)">
+    <circle cx="0" cy="0" r="34" fill="#138808"/>
+    <path d="M-15 2 L-4 14 L18 -12" stroke="#fff" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g transform="translate(860 340)">
+    <circle cx="0" cy="0" r="34" fill="#ff9933"/>
+    <path d="M0 -16 L0 8 M0 18 L0 20" stroke="#3a2400" stroke-width="7" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- magnifier -->
+  <g transform="translate(760 380)" stroke="#dfe8fb" stroke-width="10" fill="none">
+    <circle cx="0" cy="0" r="70" fill="#0a2e73" fill-opacity="0.35"/>
+    <line x1="52" y1="52" x2="120" y2="120" stroke-linecap="round"/>
+  </g>
+
+  <rect width="1600" height="620" fill="url(#scrim1)"/>
+  <rect x="0" y="600" width="1600" height="6" fill="#ff9933"/>
+  <rect x="0" y="606" width="1600" height="6" fill="#ffffff"/>
+  <rect x="0" y="612" width="1600" height="8" fill="#138808"/>
+</svg>

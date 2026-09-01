@@ -5,9 +5,12 @@ import com.packsure.backend.auth.dto.RefreshTokenRequest;
 import com.packsure.backend.auth.dto.RegisterRequest;
 import com.packsure.backend.auth.dto.AuthResponse;
 import com.packsure.backend.auth.entity.RefreshToken;
+import com.packsure.backend.common.Role;
+import com.packsure.backend.exception.DuplicateResourceException;
 import com.packsure.backend.user.User;
 import com.packsure.backend.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -18,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -30,17 +34,18 @@ public class AuthService {
     @Transactional
     public AuthResponse register(RegisterRequest registerRequest) {
         if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("Email already in use");
+            throw new DuplicateResourceException("Email already in use");
         }
 
         User user = User.builder()
                 .username(registerRequest.getUsername())
                 .email(registerRequest.getEmail())
                 .password(passwordEncoder.encode(registerRequest.getPassword()))
-                .role(registerRequest.getRole())
+                .role(Role.INSPECTOR)
                 .build();
 
         userRepository.save(user);
+        log.info("Registered new user {} ({})", user.getEmail(), user.getRole());
 
         UserDetails userDetails = org.springframework.security.core.userdetails.User
                 .withUsername(user.getEmail())
@@ -68,6 +73,7 @@ public class AuthService {
 
         User user = userRepository.findByEmail(loginRequest.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid Credentials"));
+        log.info("User {} logged in", user.getEmail());
 
         UserDetails userDetails = org.springframework.security.core.userdetails.User
                 .withUsername(user.getEmail())

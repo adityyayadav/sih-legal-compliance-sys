@@ -1,0 +1,165 @@
+# Backend Progress Checklist — What's Done vs. What's Left
+
+Audit date: **2026-09-01**. Compared against `Backend-Phasewise-Guide.md`, `Backend-Team-Context-Blueprint.md`, and `Legal-Metrology-Final-Implementation-Plan.md`.
+
+Code lives at `backend/backend/` (double-nested), base package `com.packsure.backend`
+(blueprint said `com.lmcompliance` — cosmetic, don't rewrite it, just stay consistent).
+
+Legend: ✅ done · 🟡 partial / needs fixing · ❌ not started · ⏭️ ML teammate's job, skip
+
+---
+
+## Cross-cutting blockers (fix these first, they block everything else)
+
+| # | Item | State | Notes |
+|---|---|---|---|
+| B1 | `JAVA_HOME` on this machine points to a missing JDK 11 | ✅ | Fixed via `setx JAVA_HOME "C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot"` (2026-09-01). Reopen terminals to pick it up. |
+| B2 | No `.env` file → app cannot boot against Supabase | ✅ | `.env.example` committed. **`dev` profile is now fully self-contained** — H2 in-memory DB, local-disk image store (`LocalImageStorageService`, served at `/uploads/**`), and a deterministic ML mock (`MockMlAnalysisClient`). The entire scan flow works offline. Real `.env` (Supabase + Cloudinary) is only needed for the production path. |
+| B3 | No env template committed | ✅ | `backend/backend/.env.example` + `backend/backend/README.md` added. (We keep `application.properties` committed with env-var indirection instead of the guide's committed-`.properties.example` approach — cleaner, same effect.) |
+| B4 | `mvn` must be run from `backend/backend/`, not `backend/` | 🟡 | The phase guide says `cd backend/` — our layout is one level deeper. |
+
+---
+
+## Phase 0 — Environment Setup & Project Init
+
+| Step | Item | State | Notes |
+|---|---|---|---|
+| 0.4 | Spring Boot project generated | ✅ | **Deviation:** Spring Boot **4.1.1** (guide said 3.3.x). Works, but blueprint code snippets may use older APIs. Also both `spring-boot-starter-webmvc` **and** `spring-boot-starter-webflux` are on the classpath — decide if WebFlux stays (see 2B-2). |
+| 0.5 | `application.properties` with all config keys | ✅ | Present, uses `${ENV_VAR}` indirection + `spring.config.import` of `.env`. All required keys present (datasource, jpa, jwt, cloudinary, ml.service.base-url, multipart limits). |
+| 0.5 | `.gitignore` excludes secrets | ✅ | `.env` and `application.properties`-style secrets handled via env indirection; `.env` is gitignored. |
+| 0.5 | `application.properties.example` committed | ❌ | **B3.** |
+| 0.6 | jjwt dependency | 🟡 | Present but **0.11.5** (old, uses deprecated `parserBuilder()` / `setSigningKey()`). Consider bumping to `0.12.6` and updating `JwtService`. Not urgent. |
+| 0.6 | Cloudinary SDK (`cloudinary-http45`) | ✅ | v1.38.0. |
+| 0.6 | OpenPDF | ✅ | v1.3.39 present but **unused** (no report code yet — Phase 2C). |
+| 0.6 | actuator | ✅ | Added; `/actuator/health` is permit-all in security config. |
+| 0.7 | Boots on :8080, tables auto-created | ✅ | Verified 2026-09-01 with the `dev` profile: `Started BackendApplication`, Hibernate created all 6 tables, `/actuator/health` = UP, register/login/product endpoints work, protected routes return 401 without a token. Supabase run still pending real creds. |
+
+| 0.7 | `mvn clean package` / `mvn test` works offline | ✅ | `BackendApplicationTests` now uses `@ActiveProfiles("test")` + `src/test/resources/application-test.properties` (H2). Previously it needed a live DB and failed the build. |
+
+### Bugs from the 2026-09-01 smoke test
+- ~~Duplicate registration → HTTP 500 (want 409)~~ — **fixed in step 2** (now 409).
+- ~~Wrong password on login → HTTP 500 (want 401)~~ — **fixed in step 2** (now 401).
+- ~~`GET /api/users/me` → HTTP 500~~ — **fixed in step 2** (now 404; real endpoint still to build in step 3).
+- `POST /api/products` response has `createdAt: null` (entity mapped to DTO before the tx flush sets `@CreationTimestamp`; correct on `GET`). Minor — still open.
+- Startup warnings: `DaoAuthenticationProvider` + `UserDetailsService` bean redundancy warning; `spring.jpa.open-in-view` not set explicitly. Cosmetic.
+
+---
+
+## Phase 1 — Shared Foundation
+
+| Step | Item | State | Notes |
+|---|---|---|---|
+| 1.1 | 4 enums (`Role`, `ScanStatus`, `ComplianceStatus`, `RuleStatus`) | ✅ | In `common/`. All values match spec. |
+| 1.2 | 5 JPA entities | ✅ | `User`, `Product`, `Scan`, `Declaration`, `ComplianceResult` all present + a bonus `RefreshToken`. Relationships, `@GeneratedValue(UUID)`, `@CreationTimestamp`, `@Enumerated(STRING)` all correct. |
+| 1.2 | `Scan` extra columns from Impl-Plan §4 | ✅ | `ocrRawText` (TEXT) + `complianceScore` (Double) added to the entity and surfaced in `DetailedScanResponse.scan`. Nothing populates them yet — the ML mapping (step 5) will. |
+| 1.2 | `rules` table / `Rule` entity (Impl-Plan §4) | ❌ | Optional. Rules currently live only in the ML service's `rules_db.py`. Only needed if we want a `GET /api/rules` passthrough or DB-backed rules later. Low priority for demo. |
+| 1.3 | Schema auto-created in Supabase, verified | ❌ | Blocked by B2. |
+| 1.4 | 5 repositories | ✅ | All present + `RefreshTokenRepository`. No custom query methods yet (needed in Phase 2C). |
+| 1.5 | `GlobalExceptionHandler` | ✅ | Rewritten 2026-09-01. `ErrorResponse` body `{timestamp,status,error,message,fieldErrors?}`. Handlers: 404 (`ResourceNotFoundException` + unknown route), 409 (`DuplicateResourceException`), 400 (`MethodArgumentNotValidException` w/ field errors, `ConstraintViolationException`, type mismatch, `IllegalArgumentException`), 401 (`AuthenticationException`), 403 (`AccessDeniedException`), 413 (upload too large), 500 (generic — logged, safe message). Services throw the new typed exceptions. Verified with an 8-case smoke test. |
+
+---
+
+## Phase 2A — Auth & Products (Dev 1)
+
+| Step | Item | State | Notes |
+|---|---|---|---|
+| 1 | JWT utility | ✅ | `auth/service/JwtService.java` — `generateToken`, `extractUsername`, `isTokenValid`, reads `jwt.secret` / `jwt.expiration-ms`. Also full refresh-token flow (persisted in DB). Deprecated jjwt API (see 0.6). |
+| 2 | `JwtAuthFilter` (OncePerRequestFilter) | ✅ | Works. **Minor:** swallows exceptions with `System.out.println` — switch to `@Slf4j` / `log.debug` (Phase 4.5). |
+| 3 | `SecurityConfig` | ✅ | CSRF off, STATELESS, `/api/auth/**` + `/actuator/health` permit-all, filter registered, CORS for `http://localhost:3000`. **Missing for later:** exposed header `Content-Disposition` (Phase 5.1, needed for PDF download), explicit method list. |
+| 4 | Register endpoint | ✅ | `POST /api/auth/register`. **Admin self-registration hole closed 2026-09-01** — `role` removed from `RegisterRequest`; always creates `INSPECTOR`. Password now `@Size(min=8)`. First ADMIN comes from the seeder (step 8) / a future admin API. |
+| 4 | Login endpoint | ✅ | `POST /api/auth/login` returns `{token, refreshToken, username, email, role}`. |
+| 4 | `GET /api/users/me` | ✅ | Built 2026-09-01: `user/controller/UserController` + `user/service/UserService` + `user/dto/UserResponse` `{id,username,email,role,createdAt}`. Uses `@AuthenticationPrincipal`. Verified. |
+| 5 | Product service + controller | ✅ | `POST /api/products`, `GET /api/products`, `GET /api/products/{id}` all present, DTOs in place, `createdBy` wired from the JWT principal. |
+| 6 | Postman verification of the 2A flow | ❌ | Pending (blocked by B2). |
+
+---
+
+## Phase 2B — Scan Engine & ML Integration (Dev 2)
+
+| Step | Item | State | Notes |
+|---|---|---|---|
+| 1 | Cloudinary config + upload service | ✅ | Now behind an `ImageStorageService` interface. `CloudinaryService` (`@Profile("!dev & !test")`) = production: empty-file guard (400), `FileUploadException` → **502**, `secure_url`, `packsure/scans` folder. `LocalImageStorageService` (`@Profile("dev\|test")`) writes to `./uploads` and returns a `/uploads/**` URL. Scan row created only after a successful upload (Phase 4.2 rollback ✓). |
+| 2 | ML client | 🟡 | Now behind an `MlAnalysisClient` interface. `MockMlAnalysisClient` (`@Profile("dev\|test")`) returns a deterministic realistic `MlScanResponse` (COMPLIANT / PARTIAL / NON_COMPLIANT by image-URL hash) — the scan flow is fully demoable offline. **The real `MlServiceClient` (`@Profile("!dev & !test")`) still needs the rewrite**: `new RestTemplate()` w/ no timeout, JSON `{imageUrl}` body, and DTOs that don't match the agreed contract (Impl-Plan §5: multipart `images[]` + `scan_id` + `category`). Blocked on the ML teammate for the final contract. |
+| 2 | ML response DTOs | 🟡 | `MlScanResponse` **does not match Impl-Plan §5.** Real shape: `scan_id`, `status`, `processed_at`, `declarations` is a **map keyed by type** (not a list), plus `font_analysis[]`, `violations[]`, `overall_compliance_status`, `confidence_flags`. Current DTO has `overallStatus` + `declarations[]` + `ruleResults[]`. Needs a rewrite: `MlAnalysisResponse`, `MlDeclarationDto`, `MlFontAnalysisDto`, `MlViolationDto`. **Coordinate the final contract with the ML teammate before rewriting** (their `/analyze` isn't built yet — `ml-service/app/main.py` is empty). |
+| 3 | `ScanService` orchestrator | ✅ | Rewritten 2026-09-01. No class-level `@Transactional` — each `save()` is its own short tx, so the DB connection is **not** held across the Cloudinary upload or the ML call. Flow: validate → upload → save `PENDING` → save `PROCESSING` → ML call → (map + `COMPLETED`) or (`FAILED` + truncated errorMessage). Enum mapping is now defensive: unknown/blank ML status → `null` overall / `NOT_APPLICABLE` rule, logged as a warning, scan still succeeds. `@Slf4j` timing logs. |
+| 3 | `getScanStatus(id)` | ✅ | `ScanService.getScanStatus(UUID)` → `ScanStatusResponse {id, status, overallStatus, errorMessage}`. 404 if the scan doesn't exist. |
+| 4 | `POST /api/scans` | ✅ | Renamed from `POST /api/scans/analyze`; part is now **`file`** (+ `productId`). Returns **201** with `ScanStatusResponse`. Uses `@AuthenticationPrincipal`. Verified: bad UUID → 400, unknown product → 404, no token → 401, dummy Cloudinary → 502. |
+| 4 | `GET /api/scans/{id}/status` | ✅ | Built. Returns `ScanStatusResponse`. Verified 404 / 401 paths. |
+| 5 | Pipeline test (ML down → FAILED; ML up → COMPLETED) | ✅ | Full happy path now runs offline via the dev/test mocks. Automated: `ScanApiTest.submit_valid_image_runs_the_full_pipeline_via_mocks` (201 → `COMPLETED`, image at `/uploads/`, declarations + rule results populated). Also verified manually on the `dev` profile end-to-end incl. PDF download. |
+
+---
+
+## Phase 2C — Dashboard & Reports — **done 2026-09-01**
+
+| Step | Item | State | Notes |
+|---|---|---|---|
+| 1 | `GET /api/scans/{id}/detailed` | ✅ | `scan/controller/ScanQueryController` + `ScanQueryService`. `DetailedScanResponse` = `{scan, product, declarations[], complianceResults[]}` (DTOs in `report/dto/`). 404 if absent. Reads inside a read-only tx; `product` via `@EntityGraph`, the two `List` collections lazy-init (can't join-fetch two bags). |
+| 2 | `GET /api/dashboard/stats` | ✅ | `dashboard/` package. `{totalScans, compliant, nonCompliant, partial, scansLast7Days, scansLast30Days, topViolations[]}`. New repo methods: `ScanRepository.countByOverallStatus` / `countByCreatedAtAfter`; `ComplianceResultRepository.findTopViolations(FAIL, PageRequest.of(0,5))` projection. |
+| 2 | `GET /api/scans` (paginated) | ✅ | `ScanQueryController#list`, `@PageableDefault(size=20, sort="createdAt")`. Returns `Page<ScanSummaryResponse>` `{id, productName, status, overallStatus, createdAt}`. Supports `?page&size&sort=createdAt,desc`. **Not yet role-scoped** (INSPECTOR-sees-own is step 7). |
+| 3 | `GET /api/scans/{id}/report/pdf` | ✅ | `report/service/PdfReportService` (OpenPDF). A4: title, scan/product meta table, Declarations table, Compliance Results table, overall-status footer. Returns `application/pdf` + `Content-Disposition: attachment`. Verified: valid `%PDF`, ~2.2 KB for a seeded scan. |
+| 4 | Test with seeded rows | ✅ | `config/DataSeeder` (`@Profile("dev")`, only when DB empty) — 2 users, 6 products, 9 scans (8 completed w/ declarations + compliance results across COMPLIANT/NON_COMPLIANT/PARTIAL, 1 FAILED). Seeded creds: `admin@packsure.test / Admin@12345`, `inspector@packsure.test / Inspector@123`. All four endpoints verified against it. |
+
+### Also done here (pulled forward from Phase 5.1)
+- **CORS finalized**: explicit origins `localhost:3000` + `localhost:5173` (Vite), methods `GET/POST/PUT/PATCH/DELETE/OPTIONS`, headers `Authorization, Content-Type`, **exposed `Content-Disposition`** (PDF download).
+
+---
+
+## Automated tests (added 2026-09-01)
+
+`src/test/java/.../support/AbstractIntegrationTest` — `@SpringBootTest` + MockMvc + H2 (`test` profile), each method `@Transactional` (rolls back). Helpers: `registerInspector`, `createAdmin`, `login`.
+
+| Class | Covers |
+|---|---|
+| `AuthAndUserApiTest` (7) | register→login→`/me`, `role` in body ignored, dup email 409, short pw 400+fieldErrors, wrong pw 401, `/me` 401, unknown route 404 |
+| `ProductApiTest` (4) | create/list/get, `createdAt` present, unknown 404, no-token 401, missing name 400 |
+| `ScanApiTest` (5) | non-image 400, missing file 400, no-token 401, unknown scan status 404, **full pipeline via mocks → COMPLETED** |
+| `ScanAccessControlTest` (3) | inspector sees own / admin sees all, cross-user `/detailed` 403, `?status=` filter, dashboard stats scoped per inspector |
+
+`mvn test` → **20 passing** (incl. the original `contextLoads`). Runs fully offline.
+
+---
+
+## Phase 3 — Integration & Merge
+
+| Item | State | Notes |
+|---|---|---|
+| Feature branches per dev | ❌ | Only `main` exists. All work so far is committed straight to `main`. |
+| End-to-end smoke test (register → login → product → scan → poll → detailed → dashboard → PDF) | ❌ | Can't run until 2A `users/me`, 2B `status`, and 2C endpoints exist + B2 resolved. |
+| snake_case (ML) vs camelCase (Spring) mapping | 🟡 | Will bite when the real ML DTO lands — plan for `@JsonProperty` / `@JsonNaming(SnakeCaseStrategy)` on the ML DTOs. |
+
+---
+
+## Phase 4 — Hardening & Polish
+
+| Step | Item | State | Notes |
+|---|---|---|---|
+| 4.1 | Input validation | ✅ | `@Valid` on auth/product DTOs. **Scan upload now checks content-type** (`image/jpeg` / `image/png` only → 400), empty/missing file → 400. 10MB size cap in `application.properties`. `productId` non-UUID → 400, unknown → 404. |
+| 4.2 | Error-handling edge cases | 🟡 | Done: duplicate email → 409; Cloudinary failure → 502 and **no scan row created** (upload precedes the insert). Still open: ML *timeout* → `FAILED` needs the WebClient timeout from step 5. |
+| 4.3 | Pagination & filtering on `GET /api/scans` | ✅ | Pagination + sort (step 6). Optional filters `?status=` / `?productId=` / `?from=` / `?to=` (ISO dates) via `ScanSpecifications` + `JpaSpecificationExecutor`, ANDed with the owner constraint. Bad enum value → 400. Verified. |
+| 4.4 | Role-based access | ✅ | `auth/SecurityUtils.isAdmin(...)`. **ADMIN sees all scans; INSPECTOR sees only their own** — enforced on `GET /api/scans` (query switches), and `GET /api/scans/{id}/detailed`, `/status`, `/report/pdf` (403 for a non-owner inspector via `ScanQueryService.assertVisible`). `GET /api/dashboard/stats` is likewise scoped (own numbers for an inspector, global for admin). Public registration is INSPECTOR-only (step 3). |
+| 4.5 | Logging (`@Slf4j`) | ✅ | `ScanService` (create / ML duration / verdict / failure), `CloudinaryService` (upload failure), `AuthService` (register / login), `ProductService` (create), `DataSeeder`. `GlobalExceptionHandler` logs 500s / 502s in full. |
+
+---
+
+## Phase 5 — Frontend Integration & Demo Prep
+
+| Step | Item | State | Notes |
+|---|---|---|---|
+| 5.1 | CORS finalization | 🟡 | Origin `localhost:3000` ✅. **Missing:** `exposedHeaders("Content-Disposition")`, explicit methods `GET,POST,PUT,DELETE,OPTIONS`. |
+| 5.2 | `backend/postman-collection.json` committed | ✅ | `backend/backend/postman-collection.json` — Postman v2.1, 7 folders (Auth/Users/Products/Scans/Dashboard/Reports/Health), collection-level bearer auth, test scripts auto-capture `token`/`refreshToken`/`productId`/`scanId`. Import → run Login → run through the folders. |
+| 5.3 | ML contract alignment + 30s timeout | ❌ | Depends on ML teammate; DTO rewrite (2B-2) + WebClient timeout. |
+| 5.4 | `DataSeeder` (dev profile: admin + inspector + sample products + sample scans) | ❌ | Not present. Big win for demo — dashboard needs data. |
+
+---
+
+## Recommended execution order (step by step)
+
+1. **B1 + B2 + B3 + 0.7** — fix `JAVA_HOME`, get real Supabase + Cloudinary creds into `.env`, commit `application.properties.example`, confirm the app boots on :8080 and Hibernate creates all 6 tables in Supabase.
+2. **1.5** — rewrite `GlobalExceptionHandler` (404 / 400 / 401 / 403 / 409 / 500, consistent JSON shape). Everything downstream depends on sane error responses.
+3. **2A-4** — build `UserController` + `UserService` + `UserResponse` → `GET /api/users/me`; close the ADMIN self-registration hole.
+4. **2B-4 + 2B-3** — rename to `POST /api/scans` (part `file`), add `GET /api/scans/{id}/status`, split the transaction (PENDING save → process outside tx → final update), make the enum mapping defensive.
+5. **2B-2** — agree the `/analyze` contract with the ML teammate, then rewrite `MlServiceClient` (WebClient + 30s timeout + multipart) and the ML DTOs to match Impl-Plan §5.
+6. **2C** — `GET /api/scans/{id}/detailed`, `GET /api/scans` (paginated), `GET /api/dashboard/stats` (+ repo `@Query` methods), `GET /api/scans/{id}/report/pdf` (OpenPDF).
+7. **Phase 4** — validation (file type, productId), role-based access (`@PreAuthorize`), `@Slf4j` logging, Cloudinary-failure rollback.
+8. **Phase 5** — CORS exposed headers, `DataSeeder` (dev profile), export `postman-collection.json`, end-to-end smoke test with a mock ML service.
+9. **Phase 3** — adopt the per-dev branch workflow going forward (optional now that a lot is already on `main`).

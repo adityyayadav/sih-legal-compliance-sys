@@ -4,9 +4,11 @@ import com.packsure.backend.product.Product;
 import com.packsure.backend.product.ProductRepository;
 import com.packsure.backend.product.dto.ProductRequest;
 import com.packsure.backend.product.dto.ProductResponse;
+import com.packsure.backend.exception.ResourceNotFoundException;
 import com.packsure.backend.user.User;
 import com.packsure.backend.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +16,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductService {
@@ -24,7 +27,7 @@ public class ProductService {
     @Transactional
     public ProductResponse createProduct(ProductRequest request, String userEmail) {
         User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         Product product = Product.builder()
                 .name(request.getName())
@@ -33,7 +36,8 @@ public class ProductService {
                 .createdBy(user)
                 .build();
 
-        Product saved = productRepository.save(product);
+        Product saved = productRepository.saveAndFlush(product); // flush so @CreationTimestamp is populated
+        log.info("Product {} '{}' created by {}", saved.getId(), saved.getName(), userEmail);
         return mapToResponse(saved);
     }
 
@@ -47,7 +51,7 @@ public class ProductService {
     @Transactional(readOnly = true)
     public ProductResponse getProductById(UUID id) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Product not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
         return mapToResponse(product);
     }
 
