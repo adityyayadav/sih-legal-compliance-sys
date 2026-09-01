@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 620" role="img" aria-label="Digital compliance dashboard">
+  <defs>
+    <linearGradient id="g3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#092a63"/>
+      <stop offset="1" stop-color="#164a97"/>
+    </linearGradient>
+    <linearGradient id="scrim3" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#061a3d" stop-opacity="0.92"/>
+      <stop offset="0.6" stop-color="#061a3d" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#061a3d" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="620" fill="url(#g3)"/>
+  <g opacity="0.08" stroke="#ffffff" stroke-width="2">
+    <path d="M760 0 V620 M900 0 V620 M1040 0 V620 M1180 0 V620 M1320 0 V620 M1460 0 V620"/>
+    <path d="M760 120 H1600 M760 260 H1600 M760 400 H1600 M760 540 H1600"/>
+  </g>
+
+  <!-- monitor -->
+  <g transform="translate(840 90)">
+    <rect x="0" y="0" width="620" height="380" rx="14" fill="#0c1f45" stroke="#3f63b0" stroke-width="4"/>
+    <rect x="18" y="18" width="584" height="344" rx="8" fill="#12294f"/>
+    <!-- header -->
+    <rect x="40" y="40" width="220" height="18" rx="4" fill="#dfe8fb"/>
+    <!-- donut -->
+    <g transform="translate(130 190)">
+      <circle r="70" fill="none" stroke="#1f3c74" stroke-width="24"/>
+      <circle r="70" fill="none" stroke="#138808" stroke-width="24" stroke-dasharray="260 180" transform="rotate(-90)"/>
+      <circle r="70" fill="none" stroke="#ff9933" stroke-width="24" stroke-dasharray="70 370" stroke-dashoffset="-260" transform="rotate(-90)"/>
+    </g>
+    <!-- bars -->
+    <g transform="translate(300 260)" fill="#5b8def">
+      <rect x="0" y="-120" width="34" height="120"/>
+      <rect x="52" y="-90" width="34" height="90"/>
+      <rect x="104" y="-150" width="34" height="150"/>
+      <rect x="156" y="-70" width="34" height="70"/>
+      <rect x="208" y="-110" width="34" height="110"/>
+    </g>
+    <rect x="300" y="264" width="242" height="3" fill="#3f63b0"/>
+    <!-- stat chips -->
+    <rect x="40" y="300" width="150" height="40" rx="6" fill="#16305e"/>
+    <rect x="210" y="300" width="150" height="40" rx="6" fill="#16305e"/>
+    <rect x="380" y="300" width="150" height="40" rx="6" fill="#16305e"/>
+  </g>
+
+  <!-- stand -->
+  <g transform="translate(1150 470)" fill="#0c1f45" stroke="#3f63b0" stroke-width="4">
+    <rect x="-20" y="0" width="40" height="40"/>
+    <rect x="-90" y="40" width="180" height="16" rx="6"/>
+  </g>
+
+  <!-- chakra accent -->
+  <g transform="translate(1420 470)" stroke="#7ee0ff" stroke-width="3" fill="none" opacity="0.8">
+    <circle r="46"/>
+    <circle r="6" fill="#7ee0ff"/>
+    <g>
+      <line x1="0" y1="0" x2="0" y2="-44"/>
+      <line x1="0" y1="0" x2="0" y2="-44" transform="rotate(30)"/>
+      <line x1="0" y1="0" x2="0" y2="-44" transform="rotate(60)"/>
+      <line x1="0" y1="0" x2="0" y2="-44" transform="rotate(90)"/>
+      <line x1="0" y1="0" x2="0" y2="-44" transform="rotate(120)"/>
+      <line x1="0" y1="0" x2="0" y2="-44" transform="rotate(150)"/>
+      <line x1="0" y1="0" x2="0" y2="-44" transform="rotate(180)"/>
+      <line x1="0" y1="0" x2="0" y2="-44" transform="rotate(210)"/>
+      <line x1="0" y1="0" x2="0" y2="-44" transform="rotate(240)"/>
+      <line x1="0" y1="0" x2="0" y2="-44" transform="rotate(270)"/>
+      <line x1="0" y1="0" x2="0" y2="-44" transform="rotate(300)"/>
+      <line x1="0" y1="0" x2="0" y2="-44" transform="rotate(330)"/>
+    </g>
+  </g>
+
+  <rect width="1600" height="620" fill="url(#scrim3)"/>
+  <rect x="0" y="600" width="1600" height="6" fill="#ff9933"/>
+  <rect x="0" y="606" width="1600" height="6" fill="#ffffff"/>
+  <rect x="0" y="612" width="1600" height="8" fill="#138808"/>
+</svg>
