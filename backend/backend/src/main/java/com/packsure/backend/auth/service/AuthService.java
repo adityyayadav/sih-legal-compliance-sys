@@ -5,6 +5,7 @@ import com.packsure.backend.auth.dto.RefreshTokenRequest;
 import com.packsure.backend.auth.dto.RegisterRequest;
 import com.packsure.backend.auth.dto.AuthResponse;
 import com.packsure.backend.auth.entity.RefreshToken;
+import com.packsure.backend.common.Role;
 import com.packsure.backend.exception.DuplicateResourceException;
 import com.packsure.backend.user.User;
 import com.packsure.backend.user.UserRepository;
@@ -38,7 +39,7 @@ public class AuthService {
                 .username(registerRequest.getUsername())
                 .email(registerRequest.getEmail())
                 .password(passwordEncoder.encode(registerRequest.getPassword()))
-                .role(registerRequest.getRole())
+                .role(Role.INSPECTOR)
                 .build();
 
         userRepository.save(user);

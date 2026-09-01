@@ -66,9 +66,9 @@ Legend: ✅ done · 🟡 partial / needs fixing · ❌ not started · ⏭️ ML 
 | 1 | JWT utility | ✅ | `auth/service/JwtService.java` — `generateToken`, `extractUsername`, `isTokenValid`, reads `jwt.secret` / `jwt.expiration-ms`. Also full refresh-token flow (persisted in DB). Deprecated jjwt API (see 0.6). |
 | 2 | `JwtAuthFilter` (OncePerRequestFilter) | ✅ | Works. **Minor:** swallows exceptions with `System.out.println` — switch to `@Slf4j` / `log.debug` (Phase 4.5). |
 | 3 | `SecurityConfig` | ✅ | CSRF off, STATELESS, `/api/auth/**` + `/actuator/health` permit-all, filter registered, CORS for `http://localhost:3000`. **Missing for later:** exposed header `Content-Disposition` (Phase 5.1, needed for PDF download), explicit method list. |
-| 4 | Register endpoint | 🟡 | `POST /api/auth/register` works BUT **`RegisterRequest.role` is caller-controlled + endpoint is public → anyone can register themselves as `ADMIN`.** Force role to `INSPECTOR` on the public route (or lock the route to `ADMIN` per Phase 4.4). |
+| 4 | Register endpoint | ✅ | `POST /api/auth/register`. **Admin self-registration hole closed 2026-09-01** — `role` removed from `RegisterRequest`; always creates `INSPECTOR`. Password now `@Size(min=8)`. First ADMIN comes from the seeder (step 8) / a future admin API. |
 | 4 | Login endpoint | ✅ | `POST /api/auth/login` returns `{token, refreshToken, username, email, role}`. |
-| 4 | `GET /api/users/me` | ❌ | **No `UserController`, no `UserService`, no `UserResponse` DTO.** This endpoint is in the contract and Phase 3.2 smoke test. Needs building. |
+| 4 | `GET /api/users/me` | ✅ | Built 2026-09-01: `user/controller/UserController` + `user/service/UserService` + `user/dto/UserResponse` `{id,username,email,role,createdAt}`. Uses `@AuthenticationPrincipal`. Verified. |
 | 5 | Product service + controller | ✅ | `POST /api/products`, `GET /api/products`, `GET /api/products/{id}` all present, DTOs in place, `createdBy` wired from the JWT principal. |
 | 6 | Postman verification of the 2A flow | ❌ | Pending (blocked by B2). |
 
