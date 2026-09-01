@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { PageHeader } from "../components/layout/AppLayout";
 import { Alert, ComplianceBadge, Loading, Panel, ScanStatusBadge } from "../components/ui";
+import { BarList, Donut } from "../components/Charts";
+import { IconBox, IconGauge, IconReport, IconShield } from "../components/Icons";
 import { useAuth } from "../lib/auth";
 import { fmtDateTime } from "../lib/format";
 import { useDashboardStats, useScans } from "../lib/queries";
@@ -10,6 +12,9 @@ export function DashboardPage() {
   const { isAdmin, user } = useAuth();
   const stats = useDashboardStats();
   const recent = useScans({ page: 0, size: 8 });
+
+  const d = stats.data;
+  const rate = d && d.totalScans ? Math.round((d.compliant / d.totalScans) * 100) : 0;
 
   return (
     <div className="page-inner">
@@ -31,68 +36,96 @@ export function DashboardPage() {
       {stats.isLoading && <Loading label="Loading statistics…" />}
       {stats.isError && <Alert kind="error">{toApiError(stats.error).message}</Alert>}
 
-      {stats.data && (
+      {d && (
         <>
-          <div className="grid cols-4" style={{ marginBottom: 6 }}>
+          <div className="grid cols-4 stat-row">
             <div className="stat">
-              <div className="value">{stats.data.totalScans}</div>
-              <div className="label">Total scans</div>
+              <span className="stat-ic">
+                <IconReport />
+              </span>
+              <div>
+                <div className="value">{d.totalScans}</div>
+                <div className="label">Total scans</div>
+              </div>
             </div>
             <div className="stat ok">
-              <div className="value">{stats.data.compliant}</div>
-              <div className="label">Compliant</div>
+              <span className="stat-ic">
+                <IconShield />
+              </span>
+              <div>
+                <div className="value">{d.compliant}</div>
+                <div className="label">Compliant</div>
+              </div>
             </div>
             <div className="stat fail">
-              <div className="value">{stats.data.nonCompliant}</div>
-              <div className="label">Non-compliant</div>
+              <span className="stat-ic">
+                <IconBox />
+              </span>
+              <div>
+                <div className="value">{d.nonCompliant}</div>
+                <div className="label">Non-compliant</div>
+              </div>
             </div>
             <div className="stat warn">
-              <div className="value">{stats.data.partial}</div>
-              <div className="label">Partial</div>
+              <span className="stat-ic">
+                <IconGauge />
+              </span>
+              <div>
+                <div className="value">{d.partial}</div>
+                <div className="label">Partial</div>
+              </div>
             </div>
           </div>
 
           <div className="grid cols-2">
-            <Panel title="Scan volume">
-              <dl className="dl">
-                <dt>Last 7 days</dt>
-                <dd>{stats.data.scansLast7Days}</dd>
-                <dt>Last 30 days</dt>
-                <dd>{stats.data.scansLast30Days}</dd>
-                <dt>Compliance rate</dt>
-                <dd>
-                  {stats.data.totalScans
-                    ? `${Math.round((stats.data.compliant / stats.data.totalScans) * 100)}%`
-                    : "—"}
-                </dd>
-              </dl>
+            <Panel title="Compliance breakdown">
+              <Donut
+                centerValue={`${rate}%`}
+                centerLabel="compliant"
+                segments={[
+                  { label: "Compliant", value: d.compliant, color: "var(--india-green)" },
+                  { label: "Partial", value: d.partial, color: "#d68a00" },
+                  { label: "Non-compliant", value: d.nonCompliant, color: "#b32020" },
+                ]}
+              />
             </Panel>
 
-            <Panel title="Top violations">
-              {stats.data.topViolations.length === 0 ? (
-                <p className="muted small">No failed rules recorded yet.</p>
-              ) : (
-                <table className="gov">
-                  <thead>
-                    <tr>
-                      <th>Rule</th>
-                      <th className="num">Failures</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stats.data.topViolations.map((v) => (
-                      <tr key={v.ruleCode}>
-                        <td>
-                          <code className="small">{v.ruleCode}</code>
-                        </td>
-                        <td className="num">{v.count}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
+            <Panel title="Scan volume">
+              <div className="mini-metrics">
+                <div>
+                  <span className="mm-value">{d.scansLast7Days}</span>
+                  <span className="mm-label">last 7 days</span>
+                </div>
+                <div>
+                  <span className="mm-value">{d.scansLast30Days}</span>
+                  <span className="mm-label">last 30 days</span>
+                </div>
+                <div>
+                  <span className="mm-value">{rate}%</span>
+                  <span className="mm-label">compliance rate</span>
+                </div>
+              </div>
+              <p className="small muted" style={{ marginTop: 12, marginBottom: 0 }}>
+                {d.totalScans === 0
+                  ? "No scans recorded yet."
+                  : `${d.compliant} of ${d.totalScans} scans met all mandatory declarations.`}
+              </p>
             </Panel>
           </div>
+
+          <Panel title="Most frequent violations">
+            {d.topViolations.length === 0 ? (
+              <p className="muted small">No failed rules recorded yet.</p>
+            ) : (
+              <BarList
+                color="#b32020"
+                items={d.topViolations.map((v) => ({
+                  label: v.ruleCode.replace(/^RULE_/, "").replace(/_/g, " "),
+                  value: v.count,
+                }))}
+              />
+            )}
+          </Panel>
         </>
       )}
 
