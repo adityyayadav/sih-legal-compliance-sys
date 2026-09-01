@@ -73,6 +73,12 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.PAYLOAD_TOO_LARGE, "Uploaded file exceeds the maximum allowed size");
     }
 
+    @ExceptionHandler(FileUploadException.class)
+    public ResponseEntity<ErrorResponse> handleFileUpload(FileUploadException ex) {
+        log.error("File upload failed", ex);
+        return build(HttpStatus.BAD_GATEWAY, ex.getMessage());
+    }
+
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErrorResponse> handleAuthentication(AuthenticationException ex) {
         return build(HttpStatus.UNAUTHORIZED, "Invalid credentials");
