@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 620" role="img" aria-label="Legal Metrology enforcement">
+  <defs>
+    <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b2f57"/>
+      <stop offset="1" stop-color="#12406e"/>
+    </linearGradient>
+    <linearGradient id="scrim2" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#061b38" stop-opacity="0.92"/>
+      <stop offset="0.6" stop-color="#061b38" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="#061b38" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="brass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f2c14e"/>
+      <stop offset="1" stop-color="#c8912a"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="620" fill="url(#g2)"/>
+
+  <!-- faint building colonnade -->
+  <g opacity="0.12" fill="#ffffff">
+    <rect x="900" y="120" width="640" height="30"/>
+    <rect x="900" y="470" width="640" height="30"/>
+    <g>
+      <rect x="930" y="150" width="34" height="320"/>
+      <rect x="1010" y="150" width="34" height="320"/>
+      <rect x="1090" y="150" width="34" height="320"/>
+      <rect x="1170" y="150" width="34" height="320"/>
+      <rect x="1250" y="150" width="34" height="320"/>
+      <rect x="1330" y="150" width="34" height="320"/>
+      <rect x="1410" y="150" width="34" height="320"/>
+      <rect x="1490" y="150" width="34" height="320"/>
+    </g>
+    <path d="M880 120 L1220 30 L1560 120 Z"/>
+  </g>
+
+  <!-- balance scale -->
+  <g transform="translate(1120 150)" stroke="#e7eefb" stroke-width="8" fill="none" stroke-linecap="round">
+    <line x1="0" y1="0" x2="0" y2="300"/>
+    <path d="M-40 300 L40 300"/>
+    <line x1="-160" y1="40" x2="160" y2="40"/>
+    <circle cx="0" cy="40" r="14" fill="#e7eefb"/>
+    <line x1="-160" y1="40" x2="-160" y2="120"/>
+    <line x1="160" y1="40" x2="160" y2="120"/>
+    <path d="M-210 120 A50 30 0 0 0 -110 120 Z" fill="url(#brass)" stroke="#c8912a" stroke-width="4"/>
+    <path d="M110 120 A50 30 0 0 0 210 120 Z" fill="url(#brass)" stroke="#c8912a" stroke-width="4"/>
+  </g>
+
+  <!-- weight blocks -->
+  <g transform="translate(1085 250)">
+    <path d="M0 30 L10 0 L40 0 L50 30 Z" fill="url(#brass)" stroke="#a9761f" stroke-width="3"/>
+    <circle cx="25" cy="6" r="5" fill="none" stroke="#a9761f" stroke-width="3"/>
+  </g>
+
+  <!-- shield -->
+  <g transform="translate(760 210)">
+    <path d="M0 0 L150 0 L150 90 Q150 190 75 220 Q0 190 0 90 Z" fill="#0e3f2c" stroke="#138808" stroke-width="6"/>
+    <path d="M40 100 L66 128 L118 66" stroke="#8ee08a" stroke-width="12" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- document -->
+  <g transform="translate(660 320)">
+    <rect x="0" y="0" width="150" height="200" rx="6" fill="#f7f8fb" stroke="#c4cede" stroke-width="3"/>
+    <rect x="20" y="26" width="110" height="12" rx="3" fill="#12306e"/>
+    <rect x="20" y="52" width="90" height="8" rx="3" fill="#9aa6bd"/>
+    <rect x="20" y="70" width="100" height="8" rx="3" fill="#9aa6bd"/>
+    <rect x="20" y="88" width="70" height="8" rx="3" fill="#9aa6bd"/>
+    <circle cx="110" cy="150" r="26" fill="none" stroke="#ff9933" stroke-width="4"/>
+    <path d="M96 150 L106 160 L126 138" stroke="#ff9933" stroke-width="5" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <rect width="1600" height="620" fill="url(#scrim2)"/>
+  <rect x="0" y="600" width="1600" height="6" fill="#ff9933"/>
+  <rect x="0" y="606" width="1600" height="6" fill="#ffffff"/>
+  <rect x="0" y="612" width="1600" height="8" fill="#138808"/>
+</svg>
