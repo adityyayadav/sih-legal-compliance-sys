@@ -1,5 +1,6 @@
 package com.packsure.backend.scan.controller;
 
+import com.packsure.backend.auth.SecurityUtils;
 import com.packsure.backend.scan.Scan;
 import com.packsure.backend.scan.dto.ScanStatusResponse;
 import com.packsure.backend.scan.service.ScanService;
@@ -43,7 +44,10 @@ public class ScanController {
 
     /** Polling endpoint for the frontend while a scan is processing. */
     @GetMapping("/{id}/status")
-    public ResponseEntity<ScanStatusResponse> getStatus(@PathVariable UUID id) {
-        return ResponseEntity.ok(scanService.getScanStatus(id));
+    public ResponseEntity<ScanStatusResponse> getStatus(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UserDetails principal) {
+        return ResponseEntity.ok(scanService.getScanStatus(
+                id, principal.getUsername(), SecurityUtils.isAdmin(principal)));
     }
 }

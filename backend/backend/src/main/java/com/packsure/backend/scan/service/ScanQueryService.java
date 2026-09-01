@@ -11,6 +11,7 @@ import com.packsure.backend.scan.dto.ScanSummaryResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,24 +24,20 @@ public class ScanQueryService {
 
     private final ScanRepository scanRepository;
 
+    /** ADMIN sees every scan; an INSPECTOR sees only their own. */
     @Transactional(readOnly = true)
-    public Page<ScanSummaryResponse> listScans(Pageable pageable) {
-        return scanRepository.findAll(pageable).map(scan -> {
-            Product product = scan.getProduct();
-            return ScanSummaryResponse.builder()
-                    .id(scan.getId())
-                    .productName(product != null ? product.getName() : null)
-                    .status(scan.getStatus())
-                    .overallStatus(scan.getOverallStatus())
-                    .createdAt(scan.getCreatedAt())
-                    .build();
-        });
+    public Page<ScanSummaryResponse> listScans(Pageable pageable, String requesterEmail, boolean admin) {
+        Page<Scan> page = admin
+                ? scanRepository.findAll(pageable)
+                : scanRepository.findByScannedByEmail(requesterEmail, pageable);
+        return page.map(this::toSummary);
     }
 
     @Transactional(readOnly = true)
-    public DetailedScanResponse getDetailed(UUID scanId) {
+    public DetailedScanResponse getDetailed(UUID scanId, String requesterEmail, boolean admin) {
         Scan scan = scanRepository.findDetailedById(scanId)
                 .orElseThrow(() -> new ResourceNotFoundException("Scan not found"));
+        assertVisible(scan, requesterEmail, admin);
 
         Product product = scan.getProduct();
 
@@ -62,6 +59,25 @@ public class ScanQueryService {
                         .build())
                 .declarations(mapDeclarations(scan))
                 .complianceResults(mapComplianceResults(scan))
+                .build();
+    }
+
+    /** Shared owner check — throws 403 for an inspector looking at someone else's scan. */
+    public static void assertVisible(Scan scan, String requesterEmail, boolean admin) {
+        if (admin) return;
+        if (scan.getScannedBy() == null || !scan.getScannedBy().getEmail().equals(requesterEmail)) {
+            throw new AccessDeniedException("You do not have access to this scan");
+        }
+    }
+
+    private ScanSummaryResponse toSummary(Scan scan) {
+        Product product = scan.getProduct();
+        return ScanSummaryResponse.builder()
+                .id(scan.getId())
+                .productName(product != null ? product.getName() : null)
+                .status(scan.getStatus())
+                .overallStatus(scan.getOverallStatus())
+                .createdAt(scan.getCreatedAt())
                 .build();
     }
 

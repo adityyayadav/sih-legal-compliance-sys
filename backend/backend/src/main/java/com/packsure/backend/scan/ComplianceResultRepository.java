@@ -23,6 +23,17 @@ public interface ComplianceResultRepository extends JpaRepository<ComplianceResu
             """)
     List<RuleCodeCount> findTopViolations(@Param("status") RuleStatus status, Pageable pageable);
 
+    @Query("""
+            select cr.ruleCode as ruleCode, count(cr) as count
+            from ComplianceResult cr
+            where cr.status = :status and cr.scan.scannedBy.email = :email
+            group by cr.ruleCode
+            order by count(cr) desc
+            """)
+    List<RuleCodeCount> findTopViolationsByOwner(@Param("status") RuleStatus status,
+                                                 @Param("email") String email,
+                                                 Pageable pageable);
+
     /** Projection for {@link #findTopViolations}. */
     interface RuleCodeCount {
         String getRuleCode();

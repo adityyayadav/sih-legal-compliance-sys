@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -38,6 +39,8 @@ public class ScanService {
     /** Postgres/H2 column is TEXT, but keep error messages sane. */
     private static final int MAX_ERROR_MESSAGE_LENGTH = 1000;
 
+    private static final Set<String> ALLOWED_IMAGE_TYPES = Set.of("image/jpeg", "image/png");
+
     private final ScanRepository scanRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
@@ -45,6 +48,7 @@ public class ScanService {
     private final MlServiceClient mlServiceClient;
 
     public Scan processNewScan(MultipartFile imageFile, String productIdStr, String userEmail) {
+        validateImage(imageFile);
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         UUID productId = parseUuid(productIdStr, "productId");
@@ -85,15 +89,26 @@ public class ScanService {
     }
 
     @Transactional(readOnly = true)
-    public ScanStatusResponse getScanStatus(UUID scanId) {
+    public ScanStatusResponse getScanStatus(UUID scanId, String requesterEmail, boolean admin) {
         Scan scan = scanRepository.findById(scanId)
                 .orElseThrow(() -> new ResourceNotFoundException("Scan not found"));
+        ScanQueryService.assertVisible(scan, requesterEmail, admin);
         return ScanStatusResponse.builder()
                 .id(scan.getId())
                 .status(scan.getStatus())
                 .overallStatus(scan.getOverallStatus())
                 .errorMessage(scan.getErrorMessage())
                 .build();
+    }
+
+    private void validateImage(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Image file is required");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !ALLOWED_IMAGE_TYPES.contains(contentType.toLowerCase())) {
+            throw new IllegalArgumentException("Unsupported image type: only JPEG and PNG are allowed");
+        }
     }
 
     private void applyMlResponse(MlScanResponse mlResponse, Scan scan) {

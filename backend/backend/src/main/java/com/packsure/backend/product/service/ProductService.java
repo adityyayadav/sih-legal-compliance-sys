@@ -8,6 +8,7 @@ import com.packsure.backend.exception.ResourceNotFoundException;
 import com.packsure.backend.user.User;
 import com.packsure.backend.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductService {
@@ -35,6 +37,7 @@ public class ProductService {
                 .build();
 
         Product saved = productRepository.save(product);
+        log.info("Product {} '{}' created by {}", saved.getId(), saved.getName(), userEmail);
         return mapToResponse(saved);
     }
 

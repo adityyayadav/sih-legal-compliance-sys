@@ -16,6 +16,7 @@ import com.packsure.backend.scan.ComplianceResult;
 import com.packsure.backend.scan.Declaration;
 import com.packsure.backend.scan.Scan;
 import com.packsure.backend.scan.ScanRepository;
+import com.packsure.backend.scan.service.ScanQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,9 +42,10 @@ public class PdfReportService {
     private final ScanRepository scanRepository;
 
     @Transactional(readOnly = true)
-    public byte[] generate(UUID scanId) {
+    public byte[] generate(UUID scanId, String requesterEmail, boolean admin) {
         Scan scan = scanRepository.findDetailedById(scanId)
                 .orElseThrow(() -> new ResourceNotFoundException("Scan not found"));
+        ScanQueryService.assertVisible(scan, requesterEmail, admin);
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         Document doc = new Document(PageSize.A4, 40, 40, 50, 40);

@@ -118,11 +118,11 @@ Legend: ✅ done · 🟡 partial / needs fixing · ❌ not started · ⏭️ ML 
 
 | Step | Item | State | Notes |
 |---|---|---|---|
-| 4.1 | `@Valid` on request DTOs | 🟡 | Present on auth + product DTOs. **Missing:** file type check (`image/jpeg`, `image/png`) on scan upload; `productId` existence check before scan (service does look it up — just needs a clean 400/404). Size limit (10MB) is set in `application.properties` ✅. |
-| 4.2 | Error-handling edge cases | ❌ | ML timeout → `FAILED` not stuck (needs real timeout config, 2B-2); Cloudinary failure → rollback / no scan row; duplicate email → **409** (currently 500). |
-| 4.3 | Pagination & filtering on `GET /api/scans` | ❌ | Endpoint doesn't exist yet (2C). Add `?status=`, `?productId=`, `?from=&to=` when built. |
-| 4.4 | Role-based access | ❌ | `@EnableMethodSecurity` is on but **no `@PreAuthorize` anywhere**. Need: only `ADMIN` registers users; `ADMIN` sees all scans, `INSPECTOR` sees own. |
-| 4.5 | Logging (`@Slf4j`) | ❌ | No logging in any service. Add scan-request / ML-duration / ML-error / verdict logs. |
+| 4.1 | Input validation | ✅ | `@Valid` on auth/product DTOs. **Scan upload now checks content-type** (`image/jpeg` / `image/png` only → 400), empty/missing file → 400. 10MB size cap in `application.properties`. `productId` non-UUID → 400, unknown → 404. |
+| 4.2 | Error-handling edge cases | 🟡 | Done: duplicate email → 409; Cloudinary failure → 502 and **no scan row created** (upload precedes the insert). Still open: ML *timeout* → `FAILED` needs the WebClient timeout from step 5. |
+| 4.3 | Pagination & filtering on `GET /api/scans` | 🟡 | Pagination + sort done (step 6). Optional filters `?status=` / `?productId=` / `?from=&to=` not added yet — low priority. |
+| 4.4 | Role-based access | ✅ | `auth/SecurityUtils.isAdmin(...)`. **ADMIN sees all scans; INSPECTOR sees only their own** — enforced on `GET /api/scans` (query switches), and `GET /api/scans/{id}/detailed`, `/status`, `/report/pdf` (403 for a non-owner inspector via `ScanQueryService.assertVisible`). `GET /api/dashboard/stats` is likewise scoped (own numbers for an inspector, global for admin). Public registration is INSPECTOR-only (step 3). |
+| 4.5 | Logging (`@Slf4j`) | ✅ | `ScanService` (create / ML duration / verdict / failure), `CloudinaryService` (upload failure), `AuthService` (register / login), `ProductService` (create), `DataSeeder`. `GlobalExceptionHandler` logs 500s / 502s in full. |
 
 ---
 
