@@ -6,7 +6,7 @@ import com.packsure.backend.scan.dto.MlAnalyzeResponse.MlDeclaration;
 import com.packsure.backend.scan.dto.MlAnalyzeResponse.MlFontAnalysis;
 import com.packsure.backend.scan.dto.MlAnalyzeResponse.MlViolation;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -24,7 +24,7 @@ import java.util.Map;
  */
 @Slf4j
 @Service
-@Profile("dev | test")
+@ConditionalOnProperty(prefix = "app.ml", name = "mock", havingValue = "true")
 public class MockMlAnalysisClient implements MlAnalysisClient {
 
     private static final String MANUFACTURER = "manufacturer_or_packer_or_importer_name_address";

@@ -43,36 +43,45 @@ Open **http://localhost:3000** and sign in:
 
 ---
 
-## Full stack (real ML pipeline)
+## Real ML analysis — no Supabase / Cloudinary needed
 
-### 1. ML service
+Keep the `dev` profile (H2 + local image store) but point the backend at the
+**real** ML service instead of the mock.
 
-```bash
+### 1. Start the ML service
+
+```powershell
 cd ml-service
-python -m venv .venv && .venv\Scripts\activate     # Windows
-pip install -r requirements.txt                     # heavy: paddleocr, paddlepaddle, easyocr
-uvicorn app.main:app --host 0.0.0.0 --port 7860 --reload
+python -m venv .venv
+.venv\Scripts\activate
+pip install fastapi "uvicorn[standard]" python-multipart opencv-python numpy pillow pydantic scikit-image
+pip install easyocr          # for real OCR — large download; without it, OCR falls back to a stub
+uvicorn app.main:app --host 127.0.0.1 --port 7860
 ```
-First run downloads the OCR models (needs internet). Health check:
-`GET http://localhost:7860/api/v1/health`.
+Health check: `GET http://localhost:7860/api/v1/health` → `{"status":"ok",...}`
+First scan with `easyocr` installed downloads the recognizer model (needs internet).
 
-### 2. Backend against real services
+### 2. Start the backend with the real client
 
-`backend/backend/.env` (copy from `.env.example`) — set real Supabase +
-Cloudinary credentials and:
+```powershell
+cd backend\backend
+mvn spring-boot:run "-Dspring-boot.run.profiles=dev" "-Dspring-boot.run.arguments=--app.ml.mock=false"
 ```
-ML_SERVICE_URL=http://localhost:7860/api/v1
-```
-Then run **without** the dev profile:
-```bash
-cd backend/backend
-mvn spring-boot:run
-```
-Now `MlServiceClient` sends the uploaded image as `multipart/form-data` to the
-ML service and maps the returned report onto the scan.
+`app.ml.mock=false` swaps `MockMlAnalysisClient` for the real `MlServiceClient`,
+which sends the uploaded image as `multipart/form-data` to `/api/v1/analyze` and
+maps the returned report (declarations / violations / font analysis) onto the scan.
 
-### 3. Frontend
-Same as above (`npm run dev`). It's backend-only aware — no ML config needed.
+### 3. Frontend — unchanged
+```powershell
+cd frontend
+npm run dev
+```
+
+## Production (persistent DB + cloud image store)
+
+Fill `backend/backend/.env` (from `.env.example`) with real Supabase + Cloudinary
+credentials, set `ML_SERVICE_URL=http://localhost:7860/api/v1`, and run the
+backend with **no** profile flag (`mvn spring-boot:run`).
 
 ---
 
