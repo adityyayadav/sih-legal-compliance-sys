@@ -1,0 +1,187 @@
+{
+  "dataset_version": "v1.0",
+  "images": [
+    {
+      "image_filename": "e5f4b498-Copy_of_IMG20260827234632.jpg",
+      "image_width": 2256,
+      "image_height": 4000,
+      "regions": [
+        {
+          "category": "mrp",
+          "bbox": {
+            "x": 1119.85,
+            "y": 1165.72,
+            "width": 291.81,
+            "height": 536.23
+          },
+          "transcribed_text": null
+        },
+        {
+          "category": "mfg_or_pack_or_import_date",
+          "bbox": {
+            "x": 734.0,
+            "y": 1097.3,
+            "width": 410.91,
+            "height": 1173.31
+          },
+          "transcribed_text": null
+        },
+        {
+          "category": "best_before_or_use_by_date",
+          "bbox": {
+            "x": 625.66,
+            "y": 990.37,
+            "width": 451.44,
+            "height": 1261.21
+          },
+          "transcribed_text": null
+        },
+        {
+          "category": "common_or_generic_name",
+          "bbox": {
+            "x": 1211.6,
+            "y": 177.97,
+            "width": 1044.4,
+            "height": 2170.85
+          },
+          "transcribed_text": null
+        }
+      ],
+      "split": "val"
+    },
+    {
+      "image_filename": "2a1eb223-Copy_of_Screenshot_2026-08-27_235204.png",
+      "image_width": 992,
+      "image_height": 635,
+      "regions": [
+        {
+          "category": "mrp",
+          "bbox": {
+            "x": 403.69,
+            "y": 266.22,
+            "width": 92.74,
+            "height": 40.37
+          },
+          "transcribed_text": null
+        },
+        {
+          "category": "unit_sale_price",
+          "bbox": {
+            "x": 510.62,
+            "y": 246.58,
+            "width": 165.84,
+            "height": 55.64
+          },
+          "transcribed_text": null
+        },
+        {
+          "category": "mfg_or_pack_or_import_date",
+          "bbox": {
+            "x": 398.24,
+            "y": 303.32,
+            "width": 166.93,
+            "height": 39.28
+          },
+          "transcribed_text": null
+        },
+        {
+          "category": "best_before_or_use_by_date",
+          "bbox": {
+            "x": 398.24,
+            "y": 345.87,
+            "width": 172.39,
+            "height": 31.64
+          },
+          "transcribed_text": null
+        },
+        {
+          "category": "net_quantity",
+          "bbox": {
+            "x": 642.64,
+            "y": 145.11,
+            "width": 82.92,
+            "height": 52.37
+          },
+          "transcribed_text": null
+        }
+      ],
+      "split": "val"
+    },
+    {
+      "image_filename": "16aedb21-Copy_of_pepsi1.jpeg",
+      "image_width": 1000,
+      "image_height": 1000,
+      "regions": [
+        {
+          "category": "consumer_care_details",
+          "bbox": {
+            "x": 446.33,
+            "y": 716.94,
+            "width": 200.08,
+            "height": 119.28
+          },
+          "transcribed_text": null
+        },
+        {
+          "category": "net_quantity",
+          "bbox": {
+            "x": 538.67,
+            "y": 660.51,
+            "width": 76.95,
+            "height": 44.89
+          },
+          "transcribed_text": null
+        }
+      ],
+      "split": "val"
+    },
+    {
+      "image_filename": "61b6da92-Copy_of_chips5.jpg",
+      "image_width": 3468,
+      "image_height": 4624,
+      "regions": [
+        {
+          "category": "net_quantity",
+          "bbox": {
+            "x": 1223.53,
+            "y": 2470.9,
+            "width": 508.48,
+            "height": 182.74
+          },
+          "transcribed_text": null
+        },
+        {
+          "category": "mfg_or_pack_or_import_date",
+          "bbox": {
+            "x": 1159.97,
+            "y": 2105.43,
+            "width": 858.06,
+            "height": 246.3
+          },
+          "transcribed_text": null
+        },
+        {
+          "category": "best_before_or_use_by_date",
+          "bbox": {
+            "x": 2065.7,
+            "y": 2121.32,
+            "width": 953.4,
+            "height": 230.41
+          },
+          "transcribed_text": null
+        },
+        {
+          "category": "mrp",
+          "bbox": {
+            "x": 2550.35,
+            "y": 2431.18,
+            "width": 174.79,
+            "height": 286.02
+          },
+          "transcribed_text": null
+        }
+      ],
+      "split": "val"
+    }
+  ]
+}

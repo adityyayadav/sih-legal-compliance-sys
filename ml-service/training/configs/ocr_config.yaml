@@ -1,0 +1,17 @@
+# OCR Recognizer Fine-Tuning Configuration (Phase 5)
+model:
+  name: "easyocr_recognizer"
+  language: ["en"]
+  character_list: "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.,/:-₹%&() "
+
+training:
+  epochs: 15
+  batch_size: 16
+  learning_rate: 1e-4
+  optimizer: "adam"
+  val_interval: 100
+
+data:
+  train_dir: "data/processed/train"
+  val_dir: "data/processed/val"
+  target_height: 64

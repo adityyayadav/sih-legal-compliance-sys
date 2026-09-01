@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+python-multipart
+opencv-python
+numpy
+pillow
+paddleocr
+paddlepaddle
+easyocr
+pydantic
+pyyaml
+scikit-image
+pytest

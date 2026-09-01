@@ -1,0 +1,226 @@
+{
+  "dataset_version": "v1.0",
+  "images": [
+    {
+      "image_filename": "0d2f3c17-Copy_of_IMG20260827234357.jpg",
+      "image_width": 4000,
+      "image_height": 2256,
+      "regions": [
+        {
+          "category": "mrp",
+          "bbox": {
+            "x": 426.39,
+            "y": 1577.65,
+            "width": 771.38,
+            "height": 124.04
+          },
+          "transcribed_text": null
+        },
+        {
+          "category": "consumer_care_details",
+          "bbox": {
+            "x": 1748.21,
+            "y": 899.3,
+            "width": 1290.8,
+            "height": 407.01
+          },
+          "transcribed_text": null
+        },
+        {
+          "category": "mfg_or_pack_or_import_date",
+          "bbox": {
+            "x": 410.89,
+            "y": 1690.06,
+            "width": 1224.91,
+            "height": 186.06
+          },
+          "transcribed_text": null
+        },
+        {
+          "category": "best_before_or_use_by_date",
+          "bbox": {
+            "x": 1647.42,
+            "y": 1670.68,
+            "width": 1162.89,
+            "height": 139.55
+          },
+          "transcribed_text": null
+        },
+        {
+          "category": "net_quantity",
+          "bbox": {
+            "x": 251.96,
+            "y": 1942.02,
+            "width": 1034.97,
+            "height": 197.69
+          },
+          "transcribed_text": null
+        },
+        {
+          "category": "manufacturer_or_packer_or_importer_name_address",
+          "bbox": {
+            "x": 1492.37,
+            "y": 430.27,
+            "width": 1752.08,
+            "height": 271.34
+          },
+          "transcribed_text": null
+        }
+      ],
+      "split": "test"
+    },
+    {
+      "image_filename": "37cf9e65-Copy_of_Novajet_6L_A4_Label_Sheet_2_Free_Food_Barcode_Label_Making_Sof_8h3kuEu.png",
+      "image_width": 609,
+      "image_height": 572,
+      "regions": [
+        {
+          "category": "manufacturer_or_packer_or_importer_name_address",
+          "bbox": {
+            "x": 31.45,
+            "y": 471.75,
+            "width": 442.27,
+            "height": 94.35
+          },
+          "transcribed_text": null
+        },
+        {
+          "category": "net_quantity",
+          "bbox": {
+            "x": 25.55,
+            "y": 190.67,
+            "width": 191.65,
+            "height": 24.57
+          },
+          "transcribed_text": null
+        },
+        {
+          "category": "mrp",
+          "bbox": {
+            "x": 23.59,
+            "y": 261.43,
+            "width": 233.91,
+            "height": 30.47
+          },
+          "transcribed_text": null
+        },
+        {
+          "category": "mfg_or_pack_or_import_date",
+          "bbox": {
+            "x": 19.66,
+            "y": 237.84,
+            "width": 237.84,
+            "height": 22.6
+          },
+          "transcribed_text": null
+        },
+        {
+          "category": "best_before_or_use_by_date",
+          "bbox": {
+            "x": 27.52,
+            "y": 291.9,
+            "width": 326.3,
+            "height": 16.71
+          },
+          "transcribed_text": null
+        },
+        {
+          "category": "common_or_generic_name",
+          "bbox": {
+            "x": 70.76,
+            "y": 137.59,
+            "width": 437.35,
+            "height": 30.47
+          },
+          "transcribed_text": null
+        }
+      ],
+      "split": "test"
+    },
+    {
+      "image_filename": "cc9c69ca-Copy_of_IMG_20260827_235236.jpg",
+      "image_width": 1382,
+      "image_height": 2012,
+      "regions": [
+        {
+          "category": "manufacturer_or_packer_or_importer_name_address",
+          "bbox": {
+            "x": 62.23,
+            "y": 677.58,
+            "width": 978.34,
+            "height": 200.51
+          },
+          "transcribed_text": null
+        },
+        {
+          "category": "net_quantity",
+          "bbox": {
+            "x": 110.63,
+            "y": 1265.28,
+            "width": 888.46,
+            "height": 145.2
+          },
+          "transcribed_text": null
+        },
+        {
+          "category": "unit_sale_price",
+          "bbox": {
+            "x": 124.45,
+            "y": 1417.39,
+            "width": 871.18,
+            "height": 127.91
+          },
+          "transcribed_text": null
+        },
+        {
+          "category": "mfg_or_pack_or_import_date",
+          "bbox": {
+            "x": 148.65,
+            "y": 1621.35,
+            "width": 1040.57,
+            "height": 110.63
+          },
+          "transcribed_text": null
+        },
+        {
+          "category": "best_before_or_use_by_date",
+          "bbox": {
+            "x": 148.65,
+            "y": 1735.44,
+            "width": 1040.57,
+            "height": 152.11
+          },
+          "transcribed_text": null
+        },
+        {
+          "category": "manufacturer_or_packer_or_importer_name_address",
+          "bbox": {
+            "x": 41.48,
+            "y": 888.46,
+            "width": 1120.08,
+            "height": 366.45
+          },
+          "transcribed_text": null
+        },
+        {
+          "category": "other_non_mandatory_text",
+          "bbox": {
+            "x": 3.46,
+            "y": 238.54,
+            "width": 1085.51,
+            "height": 394.1
+          },
+          "transcribed_text": null
+        }
+      ],
+      "split": "test"
+    },
+    {
+      "image_filename": "73e2148a-Copy_of_IMG_20260827_232937.jpg",
+      "image_width": 720,
+      "image_height": 714,
+      "regions": [],
+      "split": "test"
+    }
+  ]
+}
