@@ -51,7 +51,7 @@ Legend: ✅ done · 🟡 partial / needs fixing · ❌ not started · ⏭️ ML 
 |---|---|---|---|
 | 1.1 | 4 enums (`Role`, `ScanStatus`, `ComplianceStatus`, `RuleStatus`) | ✅ | In `common/`. All values match spec. |
 | 1.2 | 5 JPA entities | ✅ | `User`, `Product`, `Scan`, `Declaration`, `ComplianceResult` all present + a bonus `RefreshToken`. Relationships, `@GeneratedValue(UUID)`, `@CreationTimestamp`, `@Enumerated(STRING)` all correct. |
-| 1.2 | `Scan` extra columns from Impl-Plan §4 | 🟡 | Impl-Plan §4 lists `ocr_raw_text` and `compliance_score` on `scans`. Entity has neither. Add `String ocrRawText` (TEXT) + `Double complianceScore` if we want to store them. |
+| 1.2 | `Scan` extra columns from Impl-Plan §4 | ✅ | `ocrRawText` (TEXT) + `complianceScore` (Double) added to the entity and surfaced in `DetailedScanResponse.scan`. Nothing populates them yet — the ML mapping (step 5) will. |
 | 1.2 | `rules` table / `Rule` entity (Impl-Plan §4) | ❌ | Optional. Rules currently live only in the ML service's `rules_db.py`. Only needed if we want a `GET /api/rules` passthrough or DB-backed rules later. Low priority for demo. |
 | 1.3 | Schema auto-created in Supabase, verified | ❌ | Blocked by B2. |
 | 1.4 | 5 repositories | ✅ | All present + `RefreshTokenRepository`. No custom query methods yet (needed in Phase 2C). |
@@ -104,6 +104,21 @@ Legend: ✅ done · 🟡 partial / needs fixing · ❌ not started · ⏭️ ML 
 
 ---
 
+## Automated tests (added 2026-09-01)
+
+`src/test/java/.../support/AbstractIntegrationTest` — `@SpringBootTest` + MockMvc + H2 (`test` profile), each method `@Transactional` (rolls back). Helpers: `registerInspector`, `createAdmin`, `login`.
+
+| Class | Covers |
+|---|---|
+| `AuthAndUserApiTest` (7) | register→login→`/me`, `role` in body ignored, dup email 409, short pw 400+fieldErrors, wrong pw 401, `/me` 401, unknown route 404 |
+| `ProductApiTest` (4) | create/list/get, `createdAt` present, unknown 404, no-token 401, missing name 400 |
+| `ScanApiTest` (4) | non-image 400, missing file 400, no-token 401, unknown scan status 404 |
+| `ScanAccessControlTest` (3) | inspector sees own / admin sees all, cross-user `/detailed` 403, `?status=` filter, dashboard stats scoped per inspector |
+
+`mvn test` → **19 passing** (+ the original `contextLoads`). Runs fully offline.
+
+---
+
 ## Phase 3 — Integration & Merge
 
 | Item | State | Notes |
@@ -120,7 +135,7 @@ Legend: ✅ done · 🟡 partial / needs fixing · ❌ not started · ⏭️ ML 
 |---|---|---|---|
 | 4.1 | Input validation | ✅ | `@Valid` on auth/product DTOs. **Scan upload now checks content-type** (`image/jpeg` / `image/png` only → 400), empty/missing file → 400. 10MB size cap in `application.properties`. `productId` non-UUID → 400, unknown → 404. |
 | 4.2 | Error-handling edge cases | 🟡 | Done: duplicate email → 409; Cloudinary failure → 502 and **no scan row created** (upload precedes the insert). Still open: ML *timeout* → `FAILED` needs the WebClient timeout from step 5. |
-| 4.3 | Pagination & filtering on `GET /api/scans` | 🟡 | Pagination + sort done (step 6). Optional filters `?status=` / `?productId=` / `?from=&to=` not added yet — low priority. |
+| 4.3 | Pagination & filtering on `GET /api/scans` | ✅ | Pagination + sort (step 6). Optional filters `?status=` / `?productId=` / `?from=` / `?to=` (ISO dates) via `ScanSpecifications` + `JpaSpecificationExecutor`, ANDed with the owner constraint. Bad enum value → 400. Verified. |
 | 4.4 | Role-based access | ✅ | `auth/SecurityUtils.isAdmin(...)`. **ADMIN sees all scans; INSPECTOR sees only their own** — enforced on `GET /api/scans` (query switches), and `GET /api/scans/{id}/detailed`, `/status`, `/report/pdf` (403 for a non-owner inspector via `ScanQueryService.assertVisible`). `GET /api/dashboard/stats` is likewise scoped (own numbers for an inspector, global for admin). Public registration is INSPECTOR-only (step 3). |
 | 4.5 | Logging (`@Slf4j`) | ✅ | `ScanService` (create / ML duration / verdict / failure), `CloudinaryService` (upload failure), `AuthService` (register / login), `ProductService` (create), `DataSeeder`. `GlobalExceptionHandler` logs 500s / 502s in full. |
 

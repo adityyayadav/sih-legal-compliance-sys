@@ -35,6 +35,13 @@ public class Scan {
     @Enumerated(EnumType.STRING)
     private ComplianceStatus overallStatus;
 
+    /** 0..1 aggregate score from the ML service, if provided. */
+    private Double complianceScore;
+
+    /** Raw OCR text from the ML service, kept for audit / debugging. */
+    @Column(columnDefinition = "TEXT")
+    private String ocrRawText;
+
     @Column(columnDefinition = "TEXT")
     private String errorMessage;
 

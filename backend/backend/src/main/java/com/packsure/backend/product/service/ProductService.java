@@ -36,7 +36,7 @@ public class ProductService {
                 .createdBy(user)
                 .build();
 
-        Product saved = productRepository.save(product);
+        Product saved = productRepository.saveAndFlush(product); // flush so @CreationTimestamp is populated
         log.info("Product {} '{}' created by {}", saved.getId(), saved.getName(), userEmail);
         return mapToResponse(saved);
     }

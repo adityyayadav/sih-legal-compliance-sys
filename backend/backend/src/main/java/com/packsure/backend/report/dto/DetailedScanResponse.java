@@ -25,6 +25,8 @@ public class DetailedScanResponse {
         private UUID id;
         private ScanStatus status;
         private ComplianceStatus overallStatus;
+        private Double complianceScore;
+        private String ocrRawText;
         private String imageUrl;
         private String errorMessage;
         private LocalDateTime createdAt;

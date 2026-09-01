@@ -1,10 +1,9 @@
 package com.packsure.backend.scan;
 
 import com.packsure.backend.common.ComplianceStatus;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -14,7 +13,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface ScanRepository extends JpaRepository<Scan, UUID> {
+public interface ScanRepository extends JpaRepository<Scan, UUID>, JpaSpecificationExecutor<Scan> {
 
     // --- global (ADMIN) ---
     long countByOverallStatus(ComplianceStatus overallStatus);
@@ -22,8 +21,6 @@ public interface ScanRepository extends JpaRepository<Scan, UUID> {
     long countByCreatedAtAfter(LocalDateTime cutoff);
 
     // --- scoped to one inspector ---
-    Page<Scan> findByScannedByEmail(String email, Pageable pageable);
-
     long countByScannedByEmail(String email);
 
     long countByOverallStatusAndScannedByEmail(ComplianceStatus overallStatus, String email);
