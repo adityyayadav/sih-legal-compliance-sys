@@ -1,0 +1,80 @@
+{
+  "info": {
+    "name": "Legal Metrology ML Service",
+    "description": "Direct calls to the FastAPI ML service (default port 7860).\n\nStart it first:\n  cd ml-service\n  .venv\\Scripts\\activate\n  uvicorn app.main:app --host 127.0.0.1 --port 7860\n\nThen: run Health, then Analyze (attach a JPEG/PNG under the `images` form field).\nSample label images are in ml-service/data/raw_images/.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "mlBaseUrl", "value": "http://localhost:7860/api/v1" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{mlBaseUrl}}/health", "host": ["{{mlBaseUrl}}"], "path": ["health"] },
+        "description": "Liveness + model version. Expect { \"status\": \"ok\", \"model_version\": \"v1.2\" }."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('status ok', () => pm.expect(pm.response.json().status).to.eql('ok'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rules",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{mlBaseUrl}}/rules", "host": ["{{mlBaseUrl}}"], "path": ["rules"] },
+        "description": "Returns the current rule matrix (rules_config.json) — the mandatory declarations, format regexes, font-size tables and severities the engine checks against."
+      }
+    },
+    {
+      "name": "Analyze label image",
+      "request": {
+        "method": "POST",
+        "url": { "raw": "{{mlBaseUrl}}/analyze", "host": ["{{mlBaseUrl}}"], "path": ["analyze"] },
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "images",
+              "type": "file",
+              "src": [],
+              "description": "One or more JPEG/PNG photos of the product's principal display panel. Keep the barcode in frame for print-size calibration."
+            },
+            {
+              "key": "product_id",
+              "value": "demo-001",
+              "type": "text",
+              "description": "Optional. Echoed back in the response as product_id; a UUID is generated if omitted."
+            }
+          ]
+        },
+        "description": "Runs the full pipeline (preprocess -> detect -> OCR -> extract -> font analysis -> rule engine -> report) and returns:\n{\n  product_id, status, processed_at,\n  declarations: { <field>: { present, value, confidence, bbox, source_image_index } },\n  font_analysis: [ { field, measured_height_mm, required_min_mm, compliant } ],\n  violations: [ { rule_ref, field, issue, severity } ],\n  overall_compliance_status: \"COMPLIANT\" | \"NON COMPLIANT\",\n  confidence_flags: { needs_manual_review, low_confidence_fields }\n}\n\nFirst call is slow (~50s) while EasyOCR loads its model; later calls ~10-20s. 400 if the file isn't an image; 500 on a processing error."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test('has declarations', () => pm.expect(b).to.have.property('declarations'));",
+              "pm.test('has overall status', () => pm.expect(b).to.have.property('overall_compliance_status'));",
+              "console.log('overall:', b.overall_compliance_status, '| violations:', (b.violations || []).length);"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
