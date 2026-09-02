@@ -79,7 +79,7 @@ public class ScanService {
         scan.setStatus(ScanStatus.PROCESSING);
         scan = scanRepository.save(scan);
 
-        byte[] mlBytes = ImageDownscaler.toMaxDimension(imageBytes, 1600);
+        byte[] mlBytes = ImageDownscaler.toMaxDimension(imageBytes, 2000);
 
         long start = System.currentTimeMillis();
         try {
