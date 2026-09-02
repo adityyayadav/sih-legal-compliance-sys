@@ -30,8 +30,8 @@ import java.util.concurrent.TimeUnit;
 public class MlServiceClient implements MlAnalysisClient {
 
     private static final int CONNECT_TIMEOUT_MS = 3_000;
-    private static final Duration RESPONSE_TIMEOUT = Duration.ofSeconds(90);
-    private static final Duration HARD_TIMEOUT = Duration.ofSeconds(100);
+    private static final Duration RESPONSE_TIMEOUT = Duration.ofSeconds(180);
+    private static final Duration HARD_TIMEOUT = Duration.ofSeconds(190);
 
     private final WebClient webClient;
 
@@ -74,8 +74,12 @@ public class MlServiceClient implements MlAnalysisClient {
             log.info("ML /analyze OK in {} ms", System.currentTimeMillis() - start);
             return res;
         } catch (Exception e) {
-            throw new RuntimeException("ML service call failed after "
-                    + (System.currentTimeMillis() - start) + " ms: " + e.getMessage(), e);
+            long ms = System.currentTimeMillis() - start;
+            String reason = e.getMessage() != null ? e.getMessage()
+                    : e.getClass().getSimpleName()
+                      + (ms > RESPONSE_TIMEOUT.toMillis() - 2000 ? " (ML took longer than "
+                      + RESPONSE_TIMEOUT.toSeconds() + "s)" : "");
+            throw new RuntimeException("ML service call failed after " + ms + " ms: " + reason, e);
         }
     }
 }

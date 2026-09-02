@@ -79,10 +79,12 @@ public class ScanService {
         scan.setStatus(ScanStatus.PROCESSING);
         scan = scanRepository.save(scan);
 
+        byte[] mlBytes = ImageDownscaler.toMaxDimension(imageBytes, 1600);
+
         long start = System.currentTimeMillis();
         try {
             MlAnalyzeResponse report = mlClient.analyze(
-                    imageBytes, imageFile.getOriginalFilename(), imageFile.getContentType(),
+                    mlBytes, imageFile.getOriginalFilename(), "image/jpeg",
                     scan.getId().toString());
             applyReport(report, scan);
             scan.setStatus(ScanStatus.COMPLETED);
